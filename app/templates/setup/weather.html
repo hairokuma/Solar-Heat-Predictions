@@ -1,0 +1,37 @@
+{% extends "setup/layout.html" %}
+{% block step_content %}
+<h1>Weather API</h1>
+<p>Enter your OpenWeatherMap API key (the free tier is enough).</p>
+<form method="post" id="weather-form">
+  <label>API key
+    <input type="text" name="weather_api_key" id="weather_api_key" value="{{ data.get('weather_api_key', '') }}" required>
+  </label>
+  <div class="wizard-actions">
+    <button type="button" id="test-weather">Test connection</button>
+    <span id="weather-test-result"></span>
+  </div>
+  <div class="wizard-actions">
+    <a href="{{ url_for('setup.step', step='location') }}">Back</a>
+    <button type="submit">Next</button>
+  </div>
+</form>
+<script>
+document.getElementById("test-weather").addEventListener("click", async () => {
+  const result = document.getElementById("weather-test-result");
+  result.textContent = "Testing...";
+  result.className = "";
+  const resp = await fetch("{{ url_for('setup.test_weather') }}", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      latitude: {{ data.get('latitude') | tojson }},
+      longitude: {{ data.get('longitude') | tojson }},
+      weather_api_key: document.getElementById("weather_api_key").value,
+    }),
+  });
+  const body = await resp.json();
+  result.textContent = body.message;
+  result.className = body.ok ? "ok" : "error";
+});
+</script>
+{% endblock %}

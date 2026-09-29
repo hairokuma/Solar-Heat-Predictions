@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Sensors</h1>
+<p><a href="{{ url_for('web.settings_form') }}">Back to settings</a></p>
+
+<p class="hint">
+  Each sensor gets its own API key, bound to one location. POST readings to
+  <code>{{ url_for('api.create_reading', _external=True) }}</code>
+  with header <code>X-API-Key: &lt;sensor's key&gt;</code> and a JSON body like
+  <code>{"value_c": 23.4}</code>.
+</p>
+
+{% if sensors %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Location</th>
+        <th>API key</th>
+        <th>Last seen</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sensor in sensors %}
+        <tr>
+          <td>{{ sensor.name }}</td>
+          <td>{{ sensor.location|capitalize }}</td>
+          <td><code>{{ sensor.api_key }}</code></td>
+          <td>{{ sensor.last_seen_at.strftime('%Y-%m-%d %H:%M UTC') if sensor.last_seen_at else 'Never' }}</td>
+          <td>
+            <form method="post" action="{{ url_for('web.delete_sensor', sensor_id=sensor.id) }}"
+                  onsubmit="return confirm('Revoke this sensor? Its API key will stop working immediately.');">
+              <button type="submit" class="danger">Revoke</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="hint">No sensors registered yet.</p>
+{% endif %}
+
+<h2>Add a sensor</h2>
+<form method="post" action="{{ url_for('web.create_sensor') }}">
+  <label>Name
+    <input type="text" name="name" placeholder="e.g. Conservatory ESP8266" required>
+  </label>
+  <label>Location
+    <select name="location" required>
+      {% for loc in locations %}
+        <option value="{{ loc }}">{{ loc|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <div class="wizard-actions">
+    <button type="submit">Add sensor</button>
+  </div>
+</form>
+{% endblock %}

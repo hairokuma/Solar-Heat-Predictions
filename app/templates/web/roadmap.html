@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Solar heat roadmap</h1>
+<p><a href="{{ url_for('web.dashboard') }}">Back to dashboard</a></p>
+
+{% if not has_forecasts %}
+  <p class="hint">No weather forecast data yet. Once the weather job has fetched a forecast, a multi-day outlook will appear here.</p>
+{% else %}
+  {% if not using_model %}
+    <p class="hint">
+      Not enough logged history yet for a data-driven prediction (need at least {{ min_training_samples }}
+      paired Home and Conservatory readings near a weather observation). Showing rough heuristic estimates instead —
+      this improves automatically as you log more readings.
+    </p>
+  {% endif %}
+
+  {% if avg_effectiveness is not none %}
+    <p class="hint">
+      Based on {{ effectiveness_count }} past transfer{{ 's' if effectiveness_count != 1 else '' }},
+      acting on an opportunity has typically raised Home by about {{ "%+.1f"|format(avg_effectiveness) }}°C.
+    </p>
+  {% endif %}
+
+  {% for day, slots in days.items() %}
+    <h2>{{ day.strftime('%A, %B %-d') }}</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Outdoor</th>
+            <th>Conditions</th>
+            <th>Predicted Conservatory</th>
+            <th>Predicted Home</th>
+            <th>Predicted Δ</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for slot in slots %}
+            <tr class="{{ 'opportunity-row' if slot.opportunity else '' }}">
+              <td>{{ slot.forecast_for.strftime('%H:%M') }}</td>
+              <td>{{ "%.1f"|format(slot.outdoor_temp) }}°C</td>
+              <td>
+                {{ slot.condition|capitalize if slot.condition else '' }}
+                {% if slot.cloud_pct is not none %}· {{ slot.cloud_pct|int }}% cloud{% endif %}
+              </td>
+              <td>{{ "%.1f"|format(slot.predicted_conservatory) }}°C</td>
+              <td>{{ "%.1f"|format(slot.predicted_home) }}°C</td>
+              <td>{{ "%+.1f"|format(slot.predicted_delta) }}°C</td>
+              <td>{% if slot.opportunity %}<span class="badge">Opportunity</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

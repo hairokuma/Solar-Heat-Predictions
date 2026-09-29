@@ -1,0 +1,83 @@
+{% extends "setup/layout.html" %}
+{% block step_content %}
+<h1>Where is your property?</h1>
+<p>This is used to fetch local weather data.</p>
+
+<div class="geocode-search">
+  <label>Search by address or city
+    <input type="text" id="geocode_query" placeholder="e.g. Berlin, Germany">
+  </label>
+  <div class="wizard-actions">
+    <button type="button" id="geocode-button">Find coordinates</button>
+    <span id="geocode-result"></span>
+  </div>
+  <ul id="geocode-matches" class="geocode-matches"></ul>
+</div>
+
+<form method="post">
+  <label>Location name
+    <input type="text" name="location_name" id="location_name" value="{{ data.get('location_name', '') }}" placeholder="e.g. Home, Anytown" required>
+  </label>
+  <label>Latitude
+    <input type="text" name="latitude" id="latitude" value="{{ data.get('latitude', '') }}" placeholder="e.g. 52.5200" required>
+  </label>
+  <label>Longitude
+    <input type="text" name="longitude" id="longitude" value="{{ data.get('longitude', '') }}" placeholder="e.g. 13.4050" required>
+  </label>
+  <p class="hint">Search above to fill these in automatically, or type them in directly.</p>
+  <div class="wizard-actions">
+    <button type="submit">Next</button>
+  </div>
+</form>
+
+<script>
+document.getElementById("geocode-button").addEventListener("click", async () => {
+  const resultEl = document.getElementById("geocode-result");
+  const matchesEl = document.getElementById("geocode-matches");
+  const query = document.getElementById("geocode_query").value.trim();
+  matchesEl.innerHTML = "";
+
+  if (!query) {
+    resultEl.textContent = "Enter an address or city first.";
+    resultEl.className = "error";
+    return;
+  }
+
+  resultEl.textContent = "Searching...";
+  resultEl.className = "";
+
+  const resp = await fetch("{{ url_for('setup.geocode_location') }}", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({address: query}),
+  });
+  const body = await resp.json();
+
+  if (!body.ok) {
+    resultEl.textContent = body.message;
+    resultEl.className = "error";
+    return;
+  }
+
+  resultEl.textContent = `${body.results.length} match(es) found — pick one:`;
+  resultEl.className = "ok";
+
+  body.results.forEach((r) => {
+    const li = document.createElement("li");
+    const label = [r.name, r.admin1, r.country].filter(Boolean).join(", ");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = `${label} (${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)})`;
+    button.addEventListener("click", () => {
+      document.getElementById("location_name").value = label;
+      document.getElementById("latitude").value = r.latitude;
+      document.getElementById("longitude").value = r.longitude;
+      matchesEl.innerHTML = "";
+      resultEl.textContent = "Selected " + label;
+    });
+    li.appendChild(button);
+    matchesEl.appendChild(li);
+  });
+});
+</script>
+{% endblock %}

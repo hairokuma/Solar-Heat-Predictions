@@ -1,0 +1,19 @@
+{% extends "setup/layout.html" %}
+{% block step_content %}
+<h1>Notification rules</h1>
+<form method="post">
+  <label>Notify when Conservatory is this many °C warmer than Home
+    <input type="number" step="0.1" name="delta_threshold_c" value="{{ data.get('delta_threshold_c', 3.0) }}" required>
+  </label>
+  <label>Desired Home temperature (°C) — suppress/stop notifications once reached
+    <input type="number" step="0.1" name="desired_home_temp_c" value="{{ data.get('desired_home_temp_c', 21.0) }}" required>
+  </label>
+  <label>Re-notify interval while the condition persists (minutes)
+    <input type="number" step="1" name="renotify_cooldown_min" value="{{ data.get('renotify_cooldown_min', 60) }}" required>
+  </label>
+  <div class="wizard-actions">
+    <a href="{{ url_for('setup.step', step='weather') }}">Back</a>
+    <button type="submit">Next</button>
+  </div>
+</form>
+{% endblock %}

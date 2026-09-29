@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:${PORT:-5000}"
+    env_file:
+      - .env
+    volumes:
+      - solar-heat-data:/data
+
+volumes:
+  solar-heat-data:

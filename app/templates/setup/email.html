@@ -1,0 +1,55 @@
+{% extends "setup/layout.html" %}
+{% block step_content %}
+<h1>Email delivery</h1>
+<form method="post" id="email-form">
+  <label>Recipient email
+    <input type="email" name="notify_email" id="notify_email" value="{{ data.get('notify_email', '') }}" required>
+  </label>
+  <label>SMTP host
+    <input type="text" name="smtp_host" id="smtp_host" value="{{ data.get('smtp_host', '') }}" required>
+  </label>
+  <label>SMTP port
+    <input type="number" name="smtp_port" id="smtp_port" value="{{ data.get('smtp_port', 587) }}" required>
+  </label>
+  <label>SMTP username
+    <input type="text" name="smtp_username" id="smtp_username" value="{{ data.get('smtp_username', '') }}" required>
+  </label>
+  <label>SMTP password
+    <input type="password" name="smtp_password" id="smtp_password" value="{{ data.get('smtp_password', '') }}" required>
+  </label>
+  <label class="checkbox">
+    <input type="checkbox" name="smtp_use_tls" id="smtp_use_tls" {% if data.get('smtp_use_tls', True) %}checked{% endif %}>
+    Use STARTTLS
+  </label>
+  <div class="wizard-actions">
+    <button type="button" id="test-email">Send test email</button>
+    <span id="email-test-result"></span>
+  </div>
+  <div class="wizard-actions">
+    <a href="{{ url_for('setup.step', step='notifications') }}">Back</a>
+    <button type="submit">Next</button>
+  </div>
+</form>
+<script>
+document.getElementById("test-email").addEventListener("click", async () => {
+  const result = document.getElementById("email-test-result");
+  result.textContent = "Sending...";
+  result.className = "";
+  const resp = await fetch("{{ url_for('setup.test_email') }}", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      notify_email: document.getElementById("notify_email").value,
+      smtp_host: document.getElementById("smtp_host").value,
+      smtp_port: document.getElementById("smtp_port").value,
+      smtp_username: document.getElementById("smtp_username").value,
+      smtp_password: document.getElementById("smtp_password").value,
+      smtp_use_tls: document.getElementById("smtp_use_tls").checked,
+    }),
+  });
+  const body = await resp.json();
+  result.textContent = body.message;
+  result.className = body.ok ? "ok" : "error";
+});
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Heat transfer log</h1>
+<p><a href="{{ url_for('web.dashboard') }}">Back to dashboard</a></p>
+
+{% if transfers %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Started</th>
+        <th>Ended</th>
+        <th>Duration</th>
+        <th>Home Δ</th>
+        <th>Conservatory start</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in transfers %}
+        <tr>
+          <td>{{ t.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>{{ t.ended_at.strftime('%Y-%m-%d %H:%M') if t.ended_at else 'Active' }}</td>
+          <td>
+            {% if t.ended_at %}
+              {{ ((t.ended_at - t.started_at).total_seconds() // 60)|int }} min
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>
+            {% if t.effectiveness is not none %}
+              {{ "%+.1f"|format(t.effectiveness) }}°C
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>{{ "%.1f"|format(t.conservatory_temp_start) if t.conservatory_temp_start is not none else '—' }}°C</td>
+          <td><a href="{{ url_for('web.transfer_detail', transfer_id=t.id) }}">Details</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="hint">No transfers logged yet.</p>
+{% endif %}
+{% endblock %}

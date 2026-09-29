@@ -1,0 +1,290 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f5f0;
+  --fg: #2b2b2b;
+  --accent: #c9622a;
+  --border: #ddd6c9;
+  --ok: #2e7d32;
+  --error: #b3261e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+
+.topbar .brand {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--fg);
+}
+
+.topbar nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+}
+
+.topbar nav a {
+  text-decoration: none;
+  color: var(--accent);
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .topbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .tile-value {
+    font-size: 1.5rem;
+  }
+}
+
+.wizard-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  list-style: none;
+  padding: 0;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.wizard-steps .active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+label {
+  display: block;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+label.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: normal;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"] {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+button[type="button"] {
+  background: #fff;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+button.cta {
+  box-shadow: 0 0 0 3px rgba(201, 98, 42, 0.25);
+}
+
+button.danger {
+  background: #fff;
+  color: var(--error);
+  border: 1px solid var(--error);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+th {
+  font-size: 0.8rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 2rem;
+}
+
+.tile {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.tile-label {
+  font-size: 0.85rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tile-value {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.tile-empty {
+  font-size: 1rem;
+  font-weight: normal;
+  color: #999;
+}
+
+.tile-meta {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
+.tile form {
+  margin: 0.6rem 0 0;
+}
+
+.tile button {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+code {
+  background: #f0ece2;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.opportunity-row {
+  background: rgba(46, 125, 50, 0.08);
+}
+
+.badge {
+  display: inline-block;
+  background: var(--ok);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.geocode-matches {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.geocode-matches li {
+  margin-bottom: 0.4rem;
+}
+
+.geocode-matches button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+
+.geocode-matches button:hover {
+  border-color: var(--accent);
+}
+
+.review-list dt {
+  font-weight: 600;
+  margin-top: 0.75rem;
+}
+
+.review-list dd {
+  margin-left: 0;
+  color: #555;
+}
+
+.flashes {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.flash {
+  padding: 0.6rem 0.9rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.flash-error { background: #fdecea; color: var(--error); }
+.flash-success { background: #eaf5ea; color: var(--ok); }
+
+#weather-test-result.ok, #email-test-result.ok { color: var(--ok); }
+#weather-test-result.error, #email-test-result.error { color: var(--error); }

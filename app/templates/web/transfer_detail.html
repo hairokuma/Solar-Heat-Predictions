@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Transfer details</h1>
+<p><a href="{{ url_for('web.list_transfers') }}">Back to transfer log</a></p>
+
+<form method="post" action="{{ url_for('web.edit_transfer', transfer_id=transfer.id) }}">
+  <label>Started at
+    <input type="datetime-local" name="started_at"
+           value="{{ form.started_at if form else transfer.started_at.strftime('%Y-%m-%dT%H:%M') }}" required>
+  </label>
+  <label>Ended at (leave blank if still active)
+    <input type="datetime-local" name="ended_at"
+           value="{{ form.ended_at if form else (transfer.ended_at.strftime('%Y-%m-%dT%H:%M') if transfer.ended_at else '') }}">
+  </label>
+  <label>Home temp at start (°C)
+    <input type="number" step="0.1" name="home_temp_start"
+           value="{{ form.home_temp_start if form else (transfer.home_temp_start if transfer.home_temp_start is not none else '') }}">
+  </label>
+  <label>Home temp at end (°C)
+    <input type="number" step="0.1" name="home_temp_end"
+           value="{{ form.home_temp_end if form else (transfer.home_temp_end if transfer.home_temp_end is not none else '') }}">
+  </label>
+  <label>Conservatory temp at start (°C)
+    <input type="number" step="0.1" name="conservatory_temp_start"
+           value="{{ form.conservatory_temp_start if form else (transfer.conservatory_temp_start if transfer.conservatory_temp_start is not none else '') }}">
+  </label>
+  <label>Conservatory temp at end (°C)
+    <input type="number" step="0.1" name="conservatory_temp_end"
+           value="{{ form.conservatory_temp_end if form else (transfer.conservatory_temp_end if transfer.conservatory_temp_end is not none else '') }}">
+  </label>
+  <label>Notes
+    <input type="text" name="notes" value="{{ form.notes if form else (transfer.notes or '') }}">
+  </label>
+
+  {% if transfer.effectiveness is not none %}
+    <p class="hint">Effectiveness (Home temperature rise): {{ "%+.1f"|format(transfer.effectiveness) }}°C</p>
+  {% endif %}
+
+  <div class="wizard-actions">
+    <button type="submit">Save changes</button>
+  </div>
+</form>
+
+<form method="post" action="{{ url_for('web.delete_transfer', transfer_id=transfer.id) }}"
+      onsubmit="return confirm('Delete this transfer record?');">
+  <div class="wizard-actions">
+    <button type="submit" class="danger">Delete transfer</button>
+  </div>
+</form>
+{% endblock %}

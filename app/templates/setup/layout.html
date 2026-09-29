@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="wizard">
+  <ol class="wizard-steps">
+    {% for s in steps %}
+      <li class="{{ 'active' if s == current else '' }}">{{ loop.index }}. {{ s|capitalize }}</li>
+    {% endfor %}
+  </ol>
+  <div class="wizard-panel">
+    {% block step_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

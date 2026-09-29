@@ -1,0 +1,20 @@
+{% extends "setup/layout.html" %}
+{% block step_content %}
+<h1>Review &amp; confirm</h1>
+<dl class="review-list">
+  <dt>Location</dt><dd>{{ data.get('location_name') }} ({{ data.get('latitude') }}, {{ data.get('longitude') }})</dd>
+  <dt>Weather API key</dt><dd>••••{{ (data.get('weather_api_key') or '')[-4:] }}</dd>
+  <dt>Delta threshold</dt><dd>{{ data.get('delta_threshold_c') }}°C</dd>
+  <dt>Desired Home temperature</dt><dd>{{ data.get('desired_home_temp_c') }}°C</dd>
+  <dt>Re-notify interval</dt><dd>{{ data.get('renotify_cooldown_min') }} min</dd>
+  <dt>Notification email</dt><dd>{{ data.get('notify_email') }}</dd>
+  <dt>SMTP</dt><dd>{{ data.get('smtp_username') }}@{{ data.get('smtp_host') }}:{{ data.get('smtp_port') }} ({{ 'TLS' if data.get('smtp_use_tls') else 'no TLS' }})</dd>
+</dl>
+<form method="post">
+  <input type="hidden" name="action" value="finish">
+  <div class="wizard-actions">
+    <a href="{{ url_for('setup.step', step='email') }}">Back</a>
+    <button type="submit">Finish setup</button>
+  </div>
+</form>
+{% endblock %}

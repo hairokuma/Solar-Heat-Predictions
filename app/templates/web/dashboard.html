@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+<p><a href="{{ url_for('web.new_reading') }}">Log a reading</a></p>
+
+<div class="tiles">
+  {% for location in ['home', 'conservatory', 'garden'] %}
+    {% set reading = latest.get(location) %}
+    <div class="tile">
+      <div class="tile-label">{{ location|capitalize }}</div>
+      {% if reading %}
+        <div class="tile-value">{{ "%.1f"|format(reading.value_c) }}°C</div>
+        <div class="tile-meta">{{ reading.recorded_at.strftime('%Y-%m-%d %H:%M UTC') }} ({{ reading.source }})</div>
+      {% else %}
+        <div class="tile-value tile-empty">No data yet</div>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <div class="tile">
+    <div class="tile-label">Outdoor</div>
+    {% if weather %}
+      <div class="tile-value">{{ "%.1f"|format(weather.temp_c) }}°C</div>
+      <div class="tile-meta">
+        {{ weather.condition|capitalize if weather.condition else '' }}
+        {% if weather.cloud_pct is not none %}· {{ weather.cloud_pct|int }}% cloud{% endif %}
+        <br>{{ weather.fetched_at.strftime('%Y-%m-%d %H:%M UTC') }}
+      </div>
+    {% else %}
+      <div class="tile-value tile-empty">No data yet</div>
+    {% endif %}
+  </div>
+
+  <div class="tile">
+    <div class="tile-label">Heat Transfer</div>
+    {% if active_transfer %}
+      <div class="tile-value">Active · {{ active_duration_minutes }} min</div>
+      <div class="tile-meta">Started {{ active_transfer.started_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
+      <form method="post" action="{{ url_for('web.stop_transfer', transfer_id=active_transfer.id) }}">
+        <button type="submit">Stop Transfer</button>
+      </form>
+    {% else %}
+      <div class="tile-value tile-empty">Not active</div>
+      <form method="post" action="{{ url_for('web.start_transfer') }}">
+        <button type="submit" class="{{ 'cta' if should_highlight_start else '' }}">Start Transfer</button>
+      </form>
+    {% endif %}
+    <div class="tile-meta"><a href="{{ url_for('web.list_transfers') }}">View transfer log</a></div>
+  </div>
+</div>
+
+<h2>Last {{ history_hours }}h</h2>
+<canvas id="history-chart" height="260"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+const history = {{ history | tojson }};
+const transferWindows = {{ transfer_windows | tojson }};
+const colors = { home: "#c9622a", conservatory: "#2e7d32", garden: "#3f6fb3" };
+
+const datasets = Object.entries(history).map(([location, points]) => ({
+  label: location.charAt(0).toUpperCase() + location.slice(1),
+  data: points.map((p) => ({ x: Date.parse(p.t), y: p.v })),
+  borderColor: colors[location] || "#888",
+  backgroundColor: colors[location] || "#888",
+  tension: 0.25,
+  spanGaps: true,
+}));
+
+const transferBandsPlugin = {
+  id: "transferBands",
+  beforeDraw(chart) {
+    const { ctx, chartArea, scales } = chart;
+    if (!chartArea || !transferWindows.length) return;
+    ctx.save();
+    ctx.fillStyle = "rgba(201, 98, 42, 0.12)";
+    transferWindows.forEach((w) => {
+      const xStart = scales.x.getPixelForValue(Date.parse(w.start));
+      const xEnd = scales.x.getPixelForValue(w.end ? Date.parse(w.end) : Date.now());
+      ctx.fillRect(xStart, chartArea.top, xEnd - xStart, chartArea.bottom - chartArea.top);
+    });
+    ctx.restore();
+  },
+};
+
+new Chart(document.getElementById("history-chart"), {
+  type: "line",
+  data: { datasets },
+  plugins: [transferBandsPlugin],
+  options: {
+    parsing: false,
+    scales: {
+      x: {
+        type: "linear",
+        ticks: { callback: (value) => new Date(value).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit" }) },
+      },
+      y: { title: { display: true, text: "°C" } },
+    },
+  },
+});
+</script>
+{% endblock %}

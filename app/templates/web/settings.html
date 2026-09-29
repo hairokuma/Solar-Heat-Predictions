@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Settings</h1>
+<form method="post">
+  <label>Location name
+    <input type="text" name="location_name" value="{{ (form.location_name if form else settings.location_name) or '' }}" required>
+  </label>
+  <label>Latitude
+    <input type="text" name="latitude" value="{{ (form.latitude if form else settings.latitude) or '' }}" required>
+  </label>
+  <label>Longitude
+    <input type="text" name="longitude" value="{{ (form.longitude if form else settings.longitude) or '' }}" required>
+  </label>
+  <label>Weather API key
+    <input type="text" name="weather_api_key" value="{{ (form.weather_api_key if form else settings.weather_api_key) or '' }}" required>
+  </label>
+  <label>Notify when Conservatory is this many °C warmer than Home
+    <input type="number" step="0.1" name="delta_threshold_c" value="{{ (form.delta_threshold_c if form else settings.delta_threshold_c) or '' }}" required>
+  </label>
+  <label>Desired Home temperature (°C)
+    <input type="number" step="0.1" name="desired_home_temp_c" value="{{ (form.desired_home_temp_c if form else settings.desired_home_temp_c) or '' }}" required>
+  </label>
+  <label>Re-notify interval (minutes)
+    <input type="number" step="1" name="renotify_cooldown_min" value="{{ (form.renotify_cooldown_min if form else settings.renotify_cooldown_min) or '' }}" required>
+  </label>
+  <label>Notification email
+    <input type="email" name="notify_email" value="{{ (form.notify_email if form else settings.notify_email) or '' }}" required>
+  </label>
+  <label>SMTP host
+    <input type="text" name="smtp_host" value="{{ (form.smtp_host if form else settings.smtp_host) or '' }}" required>
+  </label>
+  <label>SMTP port
+    <input type="number" name="smtp_port" value="{{ (form.smtp_port if form else settings.smtp_port) or '' }}" required>
+  </label>
+  <label>SMTP username
+    <input type="text" name="smtp_username" value="{{ (form.smtp_username if form else settings.smtp_username) or '' }}" required>
+  </label>
+  <label>SMTP password (leave blank to keep current)
+    <input type="password" name="smtp_password" value="">
+  </label>
+  <label class="checkbox">
+    <input type="checkbox" name="smtp_use_tls" {% if (form.smtp_use_tls if form else settings.smtp_use_tls) %}checked{% endif %}>
+    Use STARTTLS
+  </label>
+  <div class="wizard-actions">
+    <button type="submit">Save</button>
+  </div>
+</form>
+
+<h2>Sensors</h2>
+<p class="hint">
+  Each sensor (e.g. an ESP8266) gets its own API key and location.
+  <a href="{{ url_for('web.list_sensors') }}">Manage sensors</a>.
+</p>
+{% endblock %}

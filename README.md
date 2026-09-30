@@ -58,7 +58,7 @@ After changing `app/models.py`, generate and review a migration before committin
 
 Each physical sensor (e.g. an ESP8266 with a DHT11/NTC 10kΩ) is registered individually from
 **Settings → Sensors**, which assigns it its own API key and binds it to one location
-(Home, Conservatory, or Garden). Revoking a sensor immediately invalidates just that key.
+(Home, Conservatory, or a custom location added under **Settings → Locations**). Revoking a sensor immediately invalidates just that key.
 See [docs/esp8266-sensor.md](docs/esp8266-sensor.md) for wiring and firmware for one ESP8266
 reading a DHT11 (Home) and an NTC (Conservatory).
 
@@ -111,7 +111,7 @@ Or simpler, while the container is stopped: copy the volume's file directly
 ## Data Collection
 
 - Weather data from APIs (e.g., OpenWeatherMap, WeatherAPI, AccuWeather)
-- Temperature measurements from Home, Conservatory, and Garden (Manually in the GUI and automatically via sensors -> POST API)
+- Temperature measurements from Home and Conservatory, plus any custom logging-only locations (Manually in the GUI and automatically via sensors -> POST API)
 
 ## Notifications
 
@@ -129,14 +129,14 @@ Or simpler, while the container is stopped: copy the volume's file directly
 ## Web GUI
 
 - Interface for manual input of temperature measurements
-- Display of current temperatures in Home, Conservatory, and Garden
+- Display of current temperatures in Home, Conservatory, and any custom locations
 - Notifications for heat transfer opportunities
 - Logging and visualization of heat transfer events
 - Display of predicted solar heat availability and potential heat transfer opportunities
 
 ## tech
 
-- Sensors: Temperature sensors for Home, Conservatory, and Garden (for automatic data collection) (e.g., ESP8266 with DHT22 or DS18B20)
+- Sensors: Temperature sensors for Home, Conservatory, and optionally custom locations (for automatic data collection) (e.g., ESP8266 with DHT22 or DS18B20)
 - Programming languages: Python, JavaScript
 - Frameworks: Flask (for web GUI and API), HTML, CSS, JavaScript (for frontend),
 - Databases: SQLite (for storing temperature measurements and heat transfer events)

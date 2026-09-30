@@ -74,10 +74,26 @@ class Sensor(db.Model):
     last_seen_at = db.Column(db.DateTime)
 
 
+class CustomLocation(db.Model):
+    """A user-added location, on top of the built-in DEFAULT_LOCATIONS.
+
+    Custom locations are for logging only: readings are stored, shown on the
+    dashboard and accepted from sensors, but they take no part in
+    predictions, the roadmap or notifications, which only look at Home and
+    Conservatory.
+    """
+
+    __tablename__ = "custom_locations"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20), nullable=False, unique=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
 class TemperatureReading(db.Model):
     __tablename__ = "temperature_readings"
 
-    LOCATIONS = ("home", "conservatory", "garden")
+    DEFAULT_LOCATIONS = ("home", "conservatory")
     SOURCES = ("manual", "sensor")
 
     id = db.Column(db.Integer, primary_key=True)
@@ -87,6 +103,12 @@ class TemperatureReading(db.Model):
     source = db.Column(db.String(10), nullable=False, default="manual")
     sensor_id = db.Column(db.String(50))
     recorded_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    @classmethod
+    def locations(cls):
+        """The defaults followed by custom locations, in the order they were added."""
+        custom = CustomLocation.query.order_by(CustomLocation.created_at.asc(), CustomLocation.id.asc())
+        return list(cls.DEFAULT_LOCATIONS) + [loc.name for loc in custom]
 
 
 class WeatherObservation(db.Model):

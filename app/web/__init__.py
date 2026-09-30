@@ -9,6 +9,7 @@ from ..services.validation import MAX_HUMIDITY_PCT, MAX_REASONABLE_TEMP_C, MIN_H
 web_bp = Blueprint("web", __name__)
 
 HISTORY_HOURS = 48
+TREND_WINDOW = timedelta(hours=1)
 
 
 @web_bp.get("/")
@@ -19,11 +20,12 @@ def dashboard():
 def dashboard_context():
     """Everything web/dashboard.html needs, shared with routes that re-render
     the dashboard (e.g. a rejected reading from the log-reading dialog)."""
+    locations = TemperatureReading.locations()
     latest = {
         location: TemperatureReading.query.filter_by(location=location)
         .order_by(TemperatureReading.recorded_at.desc())
         .first()
-        for location in TemperatureReading.LOCATIONS
+        for location in locations
     }
 
     cutoff = utcnow() - timedelta(hours=HISTORY_HOURS)
@@ -38,7 +40,7 @@ def dashboard_context():
             for row in history_rows
             if row.location == location
         ]
-        for location in TemperatureReading.LOCATIONS
+        for location in locations
     }
     # Humidity is optional per reading, so only locations that actually
     # report it get a series (plotted on the chart's right-hand axis).
@@ -82,7 +84,10 @@ def dashboard_context():
             delta >= settings.delta_threshold_c and home_reading.value_c < settings.desired_home_temp_c
         )
 
+    trends = {location: hourly_trend(location, latest.get(location)) for location in ("conservatory", "home")}
+
     return dict(
+        locations=locations,
         latest=latest,
         history=history,
         humidity_history=humidity_history,
@@ -92,6 +97,7 @@ def dashboard_context():
         active_duration_minutes=active_duration_minutes,
         transfer_windows=transfer_windows,
         should_highlight_start=should_highlight_start,
+        trends=trends,
         roadmap=roadmap_context(),
         min_temp_c=MIN_REASONABLE_TEMP_C,
         max_temp_c=MAX_REASONABLE_TEMP_C,
@@ -100,5 +106,30 @@ def dashboard_context():
     )
 
 
-from . import readings, roadmap, sensors, settings, transfers  # noqa: E402,F401  (register routes on web_bp)
+def hourly_trend(location, latest):
+    """How fast ``location`` is warming (+) or cooling (-), in °C per hour.
+
+    Compares the latest reading with the newest one at least TREND_WINDOW
+    older, scaled to a per-hour rate. None when there is no reading that far
+    back (within two windows), or when the latest reading is itself more than
+    two windows old, since a stale rate would say nothing about "now".
+    """
+    if latest is None or latest.recorded_at < utcnow() - 2 * TREND_WINDOW:
+        return None
+    baseline = (
+        TemperatureReading.query.filter(
+            TemperatureReading.location == location,
+            TemperatureReading.recorded_at <= latest.recorded_at - TREND_WINDOW,
+            TemperatureReading.recorded_at >= latest.recorded_at - 2 * TREND_WINDOW,
+        )
+        .order_by(TemperatureReading.recorded_at.desc())
+        .first()
+    )
+    if baseline is None:
+        return None
+    hours = (latest.recorded_at - baseline.recorded_at).total_seconds() / 3600
+    return (latest.value_c - baseline.value_c) / hours
+
+
+from . import locations, readings, roadmap, sensors, settings, transfers  # noqa: E402,F401  (register routes on web_bp)
 from .roadmap import roadmap_context  # noqa: E402

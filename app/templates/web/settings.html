@@ -73,6 +73,13 @@ document.getElementById("test-email").addEventListener("click", async () => {
 });
 </script>
 
+<h2>Locations</h2>
+<p class="hint">
+  Home and Conservatory are built in. Add extra locations (e.g. a garden or attic) to log
+  readings there too; they are shown on the dashboard but not used for predictions.
+  <a href="{{ url_for('web.list_locations') }}">Manage locations</a>.
+</p>
+
 <h2>Sensors</h2>
 <p class="hint">
   Each sensor (e.g. an ESP8266) gets its own API key and location.

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from app.extensions import db
-from app.models import Sensor, Settings, TemperatureReading, WeatherObservation, utcnow
+from app.models import CustomLocation, Sensor, Settings, TemperatureReading, WeatherObservation, utcnow
 from app.web import setup as setup_views
 
 
@@ -25,6 +25,7 @@ def _configure(app):
             setup_complete=True,
         )
         db.session.add(settings)
+        db.session.add(CustomLocation(name="garden"))
         db.session.commit()
 
 
@@ -43,7 +44,7 @@ def test_dashboard_has_log_reading_button_per_location(client, app):
     _configure(app)
     resp = client.get("/")
     assert resp.status_code == 200
-    for location in TemperatureReading.LOCATIONS:
+    for location in ("home", "conservatory", "garden"):
         assert f'data-location="{location}"'.encode() in resp.data
     assert b'id="reading-dialog"' in resp.data
 

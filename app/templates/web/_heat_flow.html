@@ -1,0 +1,115 @@
+{#- Animated Conservatory -> Fan -> Home graphic. Air (and the particles)
+    only flow while a transfer is active; the pipe badges show how fast each
+    room has warmed or cooled over the last hour (see web.hourly_trend). -#}
+{% set cons = latest.get('conservatory') %}
+{% set home = latest.get('home') %}
+
+{% macro temp(reading) -%}
+  {{ "%.1f"|format(reading.value_c) ~ "°C" if reading else "--" }}
+{%- endmacro %}
+
+{% macro trend_badge(x, rate, caption) -%}
+  {% if rate is none %}
+    {% set kind, text = "none", "no data" %}
+  {% elif rate >= 0.05 %}
+    {% set kind, text = "up", "▲ " ~ "%+.1f"|format(rate) ~ " °C/h" %}
+  {% elif rate <= -0.05 %}
+    {% set kind, text = "down", "▼ " ~ ("%.1f"|format(rate)).replace("-", "−") ~ " °C/h" %}
+  {% else %}
+    {% set kind, text = "flat", "● ±0.0 °C/h" %}
+  {% endif %}
+  <g class="hf-badge hf-trend-{{ kind }}">
+    <rect x="{{ x - 64 }}" y="42" width="128" height="34" rx="17"></rect>
+    <text x="{{ x }}" y="65" text-anchor="middle">{{ text }}</text>
+    <text class="hf-caption" x="{{ x }}" y="148" text-anchor="middle">{{ caption }}</text>
+  </g>
+{%- endmacro %}
+
+<section class="hf-card{{ ' hf-active' if active_transfer else '' }}" aria-label="Heat flow">
+  <header class="hf-header">
+    <span class="hf-title">Heat flow</span>
+    {% if cons and home %}
+      <span class="hf-delta">Δ {{ "%+.1f"|format(cons.value_c - home.value_c) }} °C</span>
+    {% endif %}
+  </header>
+
+  <svg class="hf-svg" viewBox="0 0 720 260" role="img"
+       aria-label="Conservatory {{ temp(cons) }}, fan {{ 'running' if active_transfer else 'idle' }}, home {{ temp(home) }}">
+    <defs>
+      <linearGradient id="hf-flow-grad" gradientUnits="userSpaceOnUse" x1="160" y1="0" x2="560" y2="0">
+        <stop offset="0" stop-color="#ffc857"></stop>
+        <stop offset="1" stop-color="#ff7a3d"></stop>
+      </linearGradient>
+      <radialGradient id="hf-node-fill" cx="50%" cy="40%" r="65%">
+        <stop offset="0" stop-color="#27394a"></stop>
+        <stop offset="1" stop-color="#121c26"></stop>
+      </radialGradient>
+      <filter id="hf-glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="4"></feGaussianBlur>
+      </filter>
+    </defs>
+
+    {# Pipes: a dim track, then a blurred glow and crisp particles on top. #}
+    {% for d in ("M162 110 H298", "M422 110 H558") %}
+      <path class="hf-track" d="{{ d }}"></path>
+      <path class="hf-flow hf-flow-glow" d="{{ d }}" filter="url(#hf-glow)"></path>
+      <path class="hf-flow" d="{{ d }}"></path>
+    {% endfor %}
+
+    {{ trend_badge(230, trends.conservatory, "conservatory, last h") }}
+    {{ trend_badge(490, trends.home, "home, last h") }}
+
+    {# Conservatory #}
+    <g class="hf-node hf-node-cons" transform="translate(100 110)">
+      <circle class="hf-pulse" r="50"></circle>
+      <circle class="hf-ring" r="50"></circle>
+      <g class="hf-icon">
+        <path d="M-22 22 V0 L0 -18 L22 0 V22 Z M0 -18 V22 M-11 -9 V22 M11 -9 V22 M-22 8 H22"></path>
+        <g class="hf-sun" transform="translate(20 -22)">
+          <circle r="6"></circle>
+          {% for angle in range(0, 360, 45) %}
+            <line y1="-9" y2="-12" transform="rotate({{ angle }})"></line>
+          {% endfor %}
+        </g>
+      </g>
+    </g>
+    <text class="hf-label" x="100" y="196" text-anchor="middle">CONSERVATORY</text>
+    <text class="hf-temp hf-temp-cons" x="100" y="236" text-anchor="middle">{{ temp(cons) }}</text>
+
+    {# Fan: the blades group carries an invisible circle so its bounding box
+       is centred on the hub, which is what transform-box: fill-box spins it around. #}
+    <g class="hf-node hf-node-fan" transform="translate(360 110)">
+      <circle class="hf-pulse" r="50"></circle>
+      <circle class="hf-ring" r="50"></circle>
+      <circle class="hf-fan-housing" r="38"></circle>
+      <g class="hf-blades">
+        <circle r="32" fill="none" stroke="none"></circle>
+        {% for angle in (0, 120, 240) %}
+          <path d="M0 -3 C 5 -24, 22 -30, 26 -20 C 29 -11, 13 -4, 3 1 Z" transform="rotate({{ angle }})"></path>
+        {% endfor %}
+      </g>
+      <circle class="hf-hub" r="6"></circle>
+    </g>
+    <text class="hf-label" x="360" y="196" text-anchor="middle">FAN</text>
+    <text class="hf-status" x="360" y="230" text-anchor="middle">
+      {%- if active_transfer -%}
+        Running · {{ active_duration_minutes }} min
+      {%- elif should_highlight_start -%}
+        Idle · good time to start
+      {%- else -%}
+        Idle
+      {%- endif -%}
+    </text>
+
+    {# Home #}
+    <g class="hf-node hf-node-home" transform="translate(620 110)">
+      <circle class="hf-pulse" r="50"></circle>
+      <circle class="hf-ring" r="50"></circle>
+      <g class="hf-icon">
+        <path d="M-25 2 L0 -20 L25 2 M-17 -5 V22 H17 V-5 M-5 22 V9 H5 V22"></path>
+      </g>
+    </g>
+    <text class="hf-label" x="620" y="196" text-anchor="middle">HOME</text>
+    <text class="hf-temp hf-temp-home" x="620" y="236" text-anchor="middle">{{ temp(home) }}</text>
+  </svg>
+</section>

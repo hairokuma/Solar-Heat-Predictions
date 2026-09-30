@@ -42,7 +42,7 @@ docker-compose.yml
 - Scaffold Flask app (app factory pattern), SQLAlchemy, Flask-Migrate, pytest.
 - Define core tables:
   - `Settings(id=1, location_name, latitude, longitude, weather_api_key, delta_threshold_c, desired_home_temp_c, renotify_cooldown_min, notify_email, smtp_host, smtp_port, smtp_username, smtp_password, smtp_use_tls, is_configured)` — single row, created by the setup wizard (Phase 2).
-  - `TemperatureReading(id, location[home|conservatory|garden], value_c, source[manual|sensor], sensor_id, recorded_at)`
+  - `TemperatureReading(id, location[home|conservatory|<custom>], value_c, source[manual|sensor], sensor_id, recorded_at)`
   - `WeatherObservation(id, fetched_at, temp_c, cloud_pct, humidity, wind, condition, raw_json)`
   - `WeatherForecast(id, fetched_at, forecast_for, temp_c, cloud_pct, condition, raw_json)`
   - `HeatTransferEvent(id, started_at, ended_at, home_temp_start, home_temp_end, conservatory_temp_start, conservatory_temp_end, effectiveness, notes)`
@@ -68,7 +68,7 @@ docker-compose.yml
 
 ## Phase 3 — Manual entry + sensor ingestion + basic dashboard
 
-- GUI form to log a Home/Conservatory/Garden reading (defaults to now, optional timestamp override for backfill).
+- GUI form to log a Home/Conservatory/custom-location reading (defaults to now, optional timestamp override for backfill).
 - `POST /api/v1/readings` — header-based API key, body `{location, value_c, sensor_id, recorded_at?}`, for future ESP8266 sensors.
 - `GET` endpoints backing the dashboard: latest reading per location, history for a time range.
 - Dashboard page: current temp per location as large tiles, 24–48h line chart (Chart.js).

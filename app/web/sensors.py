@@ -10,7 +10,7 @@ from ..models import Sensor, TemperatureReading
 @web_bp.get("/settings/sensors")
 def list_sensors():
     sensors = Sensor.query.order_by(Sensor.created_at.asc()).all()
-    return render_template("web/sensors.html", sensors=sensors, locations=TemperatureReading.LOCATIONS)
+    return render_template("web/sensors.html", sensors=sensors, locations=TemperatureReading.locations())
 
 
 @web_bp.post("/settings/sensors")
@@ -21,8 +21,8 @@ def create_sensor():
     errors = []
     if not name:
         errors.append("Sensor name is required.")
-    if location not in TemperatureReading.LOCATIONS:
-        errors.append(f"Location must be one of {TemperatureReading.LOCATIONS}.")
+    if location not in TemperatureReading.locations():
+        errors.append(f"Location must be one of {TemperatureReading.locations()}.")
 
     if errors:
         for error in errors:

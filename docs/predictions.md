@@ -88,7 +88,7 @@ All timestamps are stored as naive UTC.
 
 ## 2. Training the models
 
-A model is trained separately for **Conservatory** and **Home**. Garden readings are collected
+A model is trained separately for **Conservatory** and **Home**. Readings from custom locations (added under Settings → Locations) are collected
 but not used for predictions.
 
 Models are trained fresh on every roadmap request instead of being stored. With a household's

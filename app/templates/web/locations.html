@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Locations</h1>
+<p><a href="{{ url_for('web.settings_form') }}">Back to settings</a></p>
+
+<p class="hint">
+  Home and Conservatory drive predictions, the roadmap and notifications. Extra locations are
+  for logging only: you can log readings and bind sensors to them, and they appear on the
+  dashboard, but they are not used in any forecast calculation.
+</p>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for loc in default_locations %}
+        <tr>
+          <td>{{ loc|capitalize }}</td>
+          <td>Built in</td>
+          <td></td>
+        </tr>
+      {% endfor %}
+      {% for loc in custom_locations %}
+        <tr>
+          <td>{{ loc.name|capitalize }}</td>
+          <td>Logging only</td>
+          <td>
+            <form method="post" action="{{ url_for('web.delete_location', location_id=loc.id) }}"
+                  onsubmit="return confirm('Remove this location? Its past readings are kept but no longer shown.');">
+              <button type="submit" class="danger">Remove</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Add a location</h2>
+<form method="post" action="{{ url_for('web.create_location') }}">
+  <label>Name
+    <input type="text" name="name" maxlength="20" placeholder="e.g. Garden" required>
+  </label>
+  <div class="wizard-actions">
+    <button type="submit">Add location</button>
+  </div>
+</form>
+{% endblock %}

@@ -367,3 +367,187 @@ code {
 
 #weather-test-result.ok, #email-test-result.ok { color: var(--ok); }
 #weather-test-result.error, #email-test-result.error { color: var(--error); }
+
+/* Heat flow graphic (web/_heat_flow.html) */
+.hf-card {
+  --hf-cons: #ffc857;
+  --hf-fan: #4fd1c5;
+  --hf-home: #ff8a50;
+  --hf-idle: #6b7a88;
+  --hf-up: #ff8a50;
+  --hf-down: #5ec8ff;
+  --hf-flat: #9aa7b2;
+  background: radial-gradient(ellipse at 20% 0%, #24384a 0%, #152230 55%, #101a24 100%);
+  border-radius: 12px;
+  padding: 1rem 1.25rem 0.5rem;
+  margin: 0 0 2rem;
+  color: #e6edf3;
+  box-shadow: 0 8px 24px rgba(16, 26, 36, 0.25);
+}
+
+.hf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.hf-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9aa7b2;
+}
+
+.hf-delta {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--hf-cons);
+}
+
+.hf-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+}
+
+.hf-svg text {
+  font-family: inherit;
+  fill: #e6edf3;
+}
+
+.hf-label {
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  fill: #9aa7b2 !important;
+}
+
+.hf-temp {
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.hf-temp-cons { fill: var(--hf-cons) !important; }
+.hf-temp-home { fill: var(--hf-home) !important; }
+
+.hf-status {
+  font-size: 17px;
+  fill: #c3ced8 !important;
+}
+
+.hf-active .hf-status { fill: var(--hf-fan) !important; }
+
+.hf-caption {
+  font-size: 13px;
+  fill: #7d8b98 !important;
+}
+
+/* Nodes */
+.hf-ring {
+  fill: url(#hf-node-fill);
+  stroke-width: 3;
+}
+
+.hf-node-cons .hf-ring { stroke: var(--hf-cons); }
+.hf-node-home .hf-ring { stroke: var(--hf-home); }
+.hf-node-fan .hf-ring { stroke: var(--hf-idle); }
+.hf-active .hf-node-fan .hf-ring { stroke: var(--hf-fan); }
+
+.hf-icon path,
+.hf-icon line {
+  fill: none;
+  stroke: #e6edf3;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hf-sun circle { fill: var(--hf-cons); }
+.hf-sun line { stroke: var(--hf-cons); }
+
+.hf-fan-housing {
+  fill: none;
+  stroke: rgba(230, 237, 243, 0.15);
+  stroke-width: 2;
+}
+
+.hf-blades path { fill: var(--hf-idle); }
+.hf-hub { fill: #e6edf3; }
+
+.hf-active .hf-blades path { fill: var(--hf-fan); }
+
+.hf-active .hf-blades {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hf-spin 0.9s linear infinite;
+}
+
+.hf-pulse {
+  fill: none;
+  stroke-width: 2;
+  opacity: 0;
+}
+
+.hf-node-cons .hf-pulse { stroke: var(--hf-cons); }
+.hf-node-fan .hf-pulse { stroke: var(--hf-fan); }
+.hf-node-home .hf-pulse { stroke: var(--hf-home); }
+
+.hf-active .hf-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hf-pulse 2.4s ease-out infinite;
+}
+
+.hf-active .hf-node-fan .hf-pulse { animation-delay: 0.8s; }
+.hf-active .hf-node-home .hf-pulse { animation-delay: 1.6s; }
+
+/* Pipes */
+.hf-track {
+  fill: none;
+  stroke: rgba(230, 237, 243, 0.08);
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
+.hf-flow {
+  fill: none;
+  stroke: url(#hf-flow-grad);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 1 17;
+  opacity: 0;
+}
+
+.hf-flow-glow { stroke-width: 10; }
+
+.hf-active .hf-flow {
+  opacity: 1;
+  animation: hf-flow 0.8s linear infinite;
+}
+
+.hf-active .hf-flow-glow { opacity: 0.6; }
+
+/* Trend badges */
+.hf-badge rect { stroke-width: 1.5; }
+.hf-badge text:not(.hf-caption) { font-size: 16px; font-weight: 600; }
+
+.hf-trend-up rect { fill: rgba(255, 138, 80, 0.14); stroke: var(--hf-up); }
+.hf-trend-up text:not(.hf-caption) { fill: var(--hf-up) !important; }
+.hf-trend-down rect { fill: rgba(94, 200, 255, 0.14); stroke: var(--hf-down); }
+.hf-trend-down text:not(.hf-caption) { fill: var(--hf-down) !important; }
+.hf-trend-flat rect,
+.hf-trend-none rect { fill: rgba(154, 167, 178, 0.1); stroke: rgba(154, 167, 178, 0.5); }
+.hf-trend-flat text:not(.hf-caption),
+.hf-trend-none text:not(.hf-caption) { fill: var(--hf-flat) !important; }
+
+@keyframes hf-spin { to { transform: rotate(360deg); } }
+@keyframes hf-flow { to { stroke-dashoffset: -36; } }
+@keyframes hf-pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hf-card * { animation: none !important; }
+}

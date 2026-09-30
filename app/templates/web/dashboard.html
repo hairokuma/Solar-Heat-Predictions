@@ -5,7 +5,7 @@
 <h1>Dashboard</h1>
 
 <div class="tiles">
-  {% for location in ['home', 'conservatory', 'garden'] %}
+  {% for location in locations %}
     {% set reading = latest.get(location) %}
     <div class="tile">
       <div class="tile-header">
@@ -57,6 +57,8 @@
     <div class="tile-meta"><a href="{{ url_for('web.list_transfers') }}">View transfer log</a></div>
   </div>
 </div>
+
+{% include "web/_heat_flow.html" %}
 
 <h2>Last {{ history_hours }}h</h2>
 <div class="chart-wrap">
@@ -156,7 +158,12 @@ openReadingDialog({{ reading_form.get('location', '') | tojson }}, true);
 const history = {{ history | tojson }};
 const humidityHistory = {{ humidity_history | tojson }};
 const transferWindows = {{ transfer_windows | tojson }};
-const colors = { home: "#c9622a", conservatory: "#2e7d32", garden: "#3f6fb3", outdoor: "#8a8a8a" };
+const colors = { home: "#c9622a", conservatory: "#2e7d32", outdoor: "#8a8a8a" };
+// Custom locations take the next free colour, in the order they were added.
+const customPalette = ["#3f6fb3", "#8e44ad", "#b8860b", "#00838f", "#ad1457", "#5d4037"];
+{{ locations | tojson }}
+  .filter((location) => !(location in colors))
+  .forEach((location, i) => { colors[location] = customPalette[i % customPalette.length]; });
 
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 

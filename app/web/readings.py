@@ -22,7 +22,7 @@ def create_reading():
     recorded_at_raw = (request.form.get("recorded_at") or "").strip()
 
     errors = []
-    if location not in TemperatureReading.LOCATIONS:
+    if location not in TemperatureReading.locations():
         errors.append("Choose a valid location.")
 
     try:

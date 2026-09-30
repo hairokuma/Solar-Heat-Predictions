@@ -3,6 +3,7 @@ from datetime import timedelta
 from flask import Blueprint, render_template
 
 from ..models import HeatTransferEvent, Settings, TemperatureReading, WeatherObservation, utcnow
+from ..services.validation import MAX_REASONABLE_TEMP_C, MIN_REASONABLE_TEMP_C
 
 web_bp = Blueprint("web", __name__)
 
@@ -11,6 +12,12 @@ HISTORY_HOURS = 48
 
 @web_bp.get("/")
 def dashboard():
+    return render_template("web/dashboard.html", **dashboard_context())
+
+
+def dashboard_context():
+    """Everything web/dashboard.html needs, shared with routes that re-render
+    the dashboard (e.g. a rejected reading from the log-reading dialog)."""
     latest = {
         location: TemperatureReading.query.filter_by(location=location)
         .order_by(TemperatureReading.recorded_at.desc())
@@ -32,6 +39,15 @@ def dashboard():
         ]
         for location in TemperatureReading.LOCATIONS
     }
+    # Outdoor temperature comes from the weather observations the scheduler
+    # stores every 30 minutes, not from TemperatureReading.
+    history["outdoor"] = [
+        {"t": row.fetched_at.isoformat(), "v": row.temp_c}
+        for row in WeatherObservation.query.filter(WeatherObservation.fetched_at >= cutoff)
+        .order_by(WeatherObservation.fetched_at.asc())
+        .all()
+        if row.temp_c is not None
+    ]
 
     weather = WeatherObservation.query.order_by(WeatherObservation.fetched_at.desc()).first()
 
@@ -57,8 +73,7 @@ def dashboard():
             delta >= settings.delta_threshold_c and home_reading.value_c < settings.desired_home_temp_c
         )
 
-    return render_template(
-        "web/dashboard.html",
+    return dict(
         latest=latest,
         history=history,
         history_hours=HISTORY_HOURS,
@@ -67,7 +82,11 @@ def dashboard():
         active_duration_minutes=active_duration_minutes,
         transfer_windows=transfer_windows,
         should_highlight_start=should_highlight_start,
+        roadmap=roadmap_context(),
+        min_temp_c=MIN_REASONABLE_TEMP_C,
+        max_temp_c=MAX_REASONABLE_TEMP_C,
     )
 
 
 from . import readings, roadmap, sensors, settings, transfers  # noqa: E402,F401  (register routes on web_bp)
+from .roadmap import roadmap_context  # noqa: E402

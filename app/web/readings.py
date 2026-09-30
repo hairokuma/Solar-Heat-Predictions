@@ -2,15 +2,10 @@ from datetime import datetime
 
 from flask import flash, redirect, render_template, request, url_for
 
-from . import web_bp
+from . import dashboard_context, web_bp
 from ..extensions import db
 from ..models import TemperatureReading, utcnow
 from ..services.validation import MAX_REASONABLE_TEMP_C, MIN_REASONABLE_TEMP_C, is_reasonable_temp
-
-
-@web_bp.get("/readings/new")
-def new_reading():
-    return render_template("web/new_reading.html", locations=TemperatureReading.LOCATIONS)
 
 
 @web_bp.post("/readings")
@@ -39,10 +34,10 @@ def create_reading():
             errors.append("Timestamp must be a valid date/time.")
 
     if errors:
-        for error in errors:
-            flash(error, "error")
+        # Re-render rather than redirect so the dialog reopens with what was
+        # typed, showing the errors inside it instead of behind the backdrop.
         return render_template(
-            "web/new_reading.html", locations=TemperatureReading.LOCATIONS, form=request.form
+            "web/dashboard.html", **dashboard_context(), reading_form=request.form, reading_errors=errors
         ), 400
 
     reading = TemperatureReading(

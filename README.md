@@ -56,9 +56,11 @@ After changing `app/models.py`, generate and review a migration before committin
 
 ## Connecting a sensor
 
-Each physical sensor (e.g. an ESP8266 with a DHT22/DS18B20) is registered individually from
+Each physical sensor (e.g. an ESP8266 with a DHT11/NTC 10kΩ) is registered individually from
 **Settings → Sensors**, which assigns it its own API key and binds it to one location
 (Home, Conservatory, or Garden). Revoking a sensor immediately invalidates just that key.
+See [docs/esp8266-sensor.md](docs/esp8266-sensor.md) for wiring and firmware for one ESP8266
+reading a DHT11 (Home) and an NTC (Conservatory).
 
 ```
 POST /api/v1/readings
@@ -119,6 +121,7 @@ Or simpler, while the container is stopped: copy the volume's file directly
 ## Predictions and Roadmap
 
 - Forecast of solar heat availability and potential heat transfer opportunities based on collected data and weather forecasts
+- See [docs/predictions.md](docs/predictions.md) for how the forecast and predictions work
 
 ## Web GUI
 

@@ -1,6 +1,7 @@
 from flask import flash, redirect, render_template, request, url_for
 
 from . import web_bp
+from .setup import send_test_email
 from ..extensions import db
 from ..models import Settings
 from ..services.validation import (
@@ -21,6 +22,17 @@ from ..services.validation import (
 def settings_form():
     settings = Settings.get()
     return render_template("web/settings.html", settings=settings)
+
+
+@web_bp.post("/settings/email/test")
+def settings_test_email():
+    payload = request.get_json(silent=True) or request.form
+    settings = Settings.get()
+    return send_test_email(
+        payload,
+        body="This is a test email from the Solar Heat Predictions settings page.",
+        fallback_password=settings.smtp_password if settings else None,
+    )
 
 
 @web_bp.post("/settings")

@@ -1,13 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="dashboard-layout">
+<div class="dashboard-main">
 <h1>Dashboard</h1>
-<p><a href="{{ url_for('web.new_reading') }}">Log a reading</a></p>
 
 <div class="tiles">
   {% for location in ['home', 'conservatory', 'garden'] %}
     {% set reading = latest.get(location) %}
     <div class="tile">
-      <div class="tile-label">{{ location|capitalize }}</div>
+      <div class="tile-header">
+        <div class="tile-label">{{ location|capitalize }}</div>
+        <button type="button" class="tile-add" data-location="{{ location }}"
+                title="Log a reading for {{ location|capitalize }}"
+                aria-label="Log a reading for {{ location|capitalize }}">+</button>
+      </div>
       {% if reading %}
         <div class="tile-value">{{ "%.1f"|format(reading.value_c) }}°C</div>
         <div class="tile-meta">{{ reading.recorded_at.strftime('%Y-%m-%d %H:%M UTC') }} ({{ reading.source }})</div>
@@ -50,19 +56,106 @@
 </div>
 
 <h2>Last {{ history_hours }}h</h2>
-<canvas id="history-chart" height="260"></canvas>
+<div class="chart-wrap">
+  <canvas id="history-chart"></canvas>
+</div>
+</div>
+
+<aside class="dashboard-roadmap">
+  <h2>Roadmap</h2>
+  {% if not roadmap.has_forecasts %}
+    <p class="hint">No weather forecast data yet.</p>
+  {% else %}
+    {% if not roadmap.using_model %}
+      <p class="hint">Heuristic estimates until more readings are logged.</p>
+    {% endif %}
+    {% for day, slots in roadmap.days.items() %}
+      <h3>{{ day.strftime('%A, %B %-d') }}</h3>
+      <table class="compact">
+        <thead>
+          <tr><th>Time</th><th>Outdoor</th><th>Δ</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for slot in slots %}
+            <tr class="{{ 'opportunity-row' if slot.opportunity else '' }}">
+              <td>{{ slot.forecast_for.strftime('%H:%M') }}</td>
+              <td>{{ "%.1f"|format(slot.outdoor_temp) }}°C</td>
+              <td>{{ "%+.1f"|format(slot.predicted_delta) }}°C</td>
+              <td>{% if slot.opportunity %}<span class="badge">Opportunity</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endfor %}
+  {% endif %}
+  <p class="hint"><a href="{{ url_for('web.roadmap') }}">Full roadmap</a></p>
+</aside>
+</div>
+
+<dialog id="reading-dialog">
+  <form method="post" action="{{ url_for('web.create_reading') }}">
+    <h2 id="reading-dialog-title">Log a reading</h2>
+    {% if reading_errors %}
+      <ul class="flashes">
+        {% for error in reading_errors %}
+          <li class="flash flash-error">{{ error }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <input type="hidden" name="location" id="reading-location" value="{{ reading_form.location if reading_form else '' }}">
+    <label>Temperature (°C)
+      <input type="number" step="0.1" min="{{ min_temp_c }}" max="{{ max_temp_c }}" name="value_c" id="reading-value"
+             value="{{ reading_form.value_c if reading_form else '' }}" required>
+    </label>
+    <label>Timestamp (leave blank for now)
+      <input type="datetime-local" name="recorded_at" id="reading-recorded-at"
+             value="{{ reading_form.recorded_at if reading_form else '' }}">
+    </label>
+    <div class="wizard-actions">
+      <button type="button" id="reading-cancel">Cancel</button>
+      <button type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
+const readingDialog = document.getElementById("reading-dialog");
+
+function openReadingDialog(location, keepValues) {
+  document.getElementById("reading-location").value = location;
+  document.getElementById("reading-dialog-title").textContent =
+    "Log a reading · " + location.charAt(0).toUpperCase() + location.slice(1);
+  if (!keepValues) {
+    document.getElementById("reading-value").value = "";
+    document.getElementById("reading-recorded-at").value = "";
+    readingDialog.querySelector(".flashes")?.remove();
+  }
+  readingDialog.showModal();
+}
+
+document.querySelectorAll(".tile-add").forEach((button) => {
+  button.addEventListener("click", () => openReadingDialog(button.dataset.location, false));
+});
+document.getElementById("reading-cancel").addEventListener("click", () => readingDialog.close());
+readingDialog.addEventListener("click", (event) => {
+  if (event.target === readingDialog) readingDialog.close();  // click on the backdrop
+});
+{% if reading_form %}
+openReadingDialog({{ reading_form.get('location', '') | tojson }}, true);
+{% endif %}
+
 const history = {{ history | tojson }};
 const transferWindows = {{ transfer_windows | tojson }};
-const colors = { home: "#c9622a", conservatory: "#2e7d32", garden: "#3f6fb3" };
+const colors = { home: "#c9622a", conservatory: "#2e7d32", garden: "#3f6fb3", outdoor: "#8a8a8a" };
 
 const datasets = Object.entries(history).map(([location, points]) => ({
   label: location.charAt(0).toUpperCase() + location.slice(1),
   data: points.map((p) => ({ x: Date.parse(p.t), y: p.v })),
   borderColor: colors[location] || "#888",
   backgroundColor: colors[location] || "#888",
+  borderDash: location === "outdoor" ? [6, 4] : [],
+  pointRadius: location === "outdoor" ? 0 : 3,
   tension: 0.25,
   spanGaps: true,
 }));
@@ -89,6 +182,7 @@ new Chart(document.getElementById("history-chart"), {
   plugins: [transferBandsPlugin],
   options: {
     parsing: false,
+    maintainAspectRatio: false,
     scales: {
       x: {
         type: "linear",

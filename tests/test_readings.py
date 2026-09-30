@@ -1,5 +1,6 @@
 from app.extensions import db
-from app.models import Sensor, Settings, TemperatureReading
+from app.models import Sensor, Settings, TemperatureReading, WeatherObservation, utcnow
+from app.web import setup as setup_views
 
 
 def _configure(app):
@@ -31,9 +32,36 @@ def _register_sensor(app, name="esp-01", location="garden", api_key="test-sensor
         db.session.commit()
 
 
-def test_manual_reading_form_requires_setup(client):
-    resp = client.get("/readings/new", follow_redirects=False)
+def test_dashboard_requires_setup(client):
+    resp = client.get("/", follow_redirects=False)
     assert resp.status_code == 302
+
+
+def test_dashboard_has_log_reading_button_per_location(client, app):
+    _configure(app)
+    resp = client.get("/")
+    assert resp.status_code == 200
+    for location in TemperatureReading.LOCATIONS:
+        assert f'data-location="{location}"'.encode() in resp.data
+    assert b'id="reading-dialog"' in resp.data
+
+
+def test_dashboard_chart_includes_outdoor_observations(client, app):
+    _configure(app)
+    with app.app_context():
+        db.session.add(WeatherObservation(fetched_at=utcnow(), temp_c=7.25))
+        db.session.commit()
+    resp = client.get("/")
+    assert b'"outdoor": [{"t":' in resp.data
+    assert b"7.25" in resp.data
+
+
+def test_rejected_reading_reopens_dialog_with_errors(client, app):
+    _configure(app)
+    resp = client.post("/readings", data={"location": "garden", "value_c": "999"})
+    assert resp.status_code == 400
+    assert b"Temperature must be between" in resp.data
+    assert b'openReadingDialog("garden", true)' in resp.data
 
 
 def test_manual_reading_creates_row_and_shows_on_dashboard(client, app):
@@ -138,3 +166,23 @@ def test_sensor_api_rejects_out_of_range_temperature(client, app):
         headers={"X-API-Key": "test-sensor-key"},
     )
     assert resp.status_code == 400
+
+
+def test_settings_test_email_falls_back_to_stored_password(client, app, monkeypatch):
+    _configure(app)
+    sent = []
+    monkeypatch.setattr(setup_views, "send_email", lambda **kwargs: sent.append(kwargs))
+    resp = client.post(
+        "/settings/email/test",
+        json={
+            "notify_email": "me@example.com",
+            "smtp_host": "smtp.example.com",
+            "smtp_port": "587",
+            "smtp_username": "me@example.com",
+            "smtp_password": "",
+            "smtp_use_tls": True,
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["ok"] is True
+    assert sent[0]["password"] == "hunter2"

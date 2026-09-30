@@ -250,9 +250,17 @@ def test_weather():
 @setup_bp.post("/email/test")
 def test_email():
     payload = request.get_json(silent=True) or request.form
+    return send_test_email(payload, body="This is a test email from the Solar Heat Predictions setup wizard.")
 
-    required = ["notify_email", "smtp_host", "smtp_username", "smtp_password"]
-    if any(not str(payload.get(field) or "").strip() for field in required):
+
+def send_test_email(payload, body, fallback_password=None):
+    """Send a test email using the SMTP details in `payload`, returning a JSON
+    response. `fallback_password` is used when the payload's password is blank
+    (the settings page never echoes the stored password back to the browser)."""
+    password = str(payload.get("smtp_password") or "") or (fallback_password or "")
+
+    required = ["notify_email", "smtp_host", "smtp_username"]
+    if any(not str(payload.get(field) or "").strip() for field in required) or not password.strip():
         return jsonify(ok=False, message="Fill in SMTP host, username, password and recipient first."), 400
 
     try:
@@ -268,12 +276,12 @@ def test_email():
             host=payload["smtp_host"],
             port=port,
             username=payload["smtp_username"],
-            password=payload["smtp_password"],
+            password=password,
             use_tls=use_tls,
             from_addr=payload["smtp_username"],
             to_addr=payload["notify_email"],
             subject="Solar Heat Predictions - test email",
-            body="This is a test email from the Solar Heat Predictions setup wizard.",
+            body=body,
         )
     except EmailSendError as exc:
         return jsonify(ok=False, message=str(exc)), 502

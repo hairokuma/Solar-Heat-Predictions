@@ -6,6 +6,10 @@ from ..services.predictions import MIN_TRAINING_SAMPLES, average_effectiveness, 
 
 @web_bp.get("/roadmap")
 def roadmap():
+    return render_template("web/roadmap.html", **roadmap_context())
+
+
+def roadmap_context():
     slots = build_roadmap()
     avg_effectiveness, effectiveness_count = average_effectiveness()
 
@@ -14,8 +18,7 @@ def roadmap():
         day_key = slot["forecast_for"].date()
         days.setdefault(day_key, []).append(slot)
 
-    return render_template(
-        "web/roadmap.html",
+    return dict(
         days=days,
         has_forecasts=bool(slots),
         using_model=slots[0]["using_model"] if slots else False,

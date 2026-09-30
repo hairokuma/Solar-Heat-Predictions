@@ -9,6 +9,7 @@ MIN_REASONABLE_TEMP_C, MAX_REASONABLE_TEMP_C = -50, 60
 MIN_DELTA_THRESHOLD_C, MAX_DELTA_THRESHOLD_C = 0.1, 30
 MIN_DESIRED_HOME_TEMP_C, MAX_DESIRED_HOME_TEMP_C = 5, 35
 MIN_COOLDOWN_MIN, MAX_COOLDOWN_MIN = 1, 1440
+MIN_HUMIDITY_PCT, MAX_HUMIDITY_PCT = 0, 100
 
 
 def is_valid_email(value):
@@ -29,3 +30,7 @@ def is_valid_port(value):
 
 def is_reasonable_temp(value):
     return MIN_REASONABLE_TEMP_C <= value <= MAX_REASONABLE_TEMP_C
+
+
+def is_valid_humidity(value):
+    return MIN_HUMIDITY_PCT <= value <= MAX_HUMIDITY_PCT

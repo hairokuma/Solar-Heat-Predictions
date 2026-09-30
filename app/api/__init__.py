@@ -4,7 +4,15 @@ from flask import Blueprint, jsonify, request
 
 from ..extensions import db, limiter
 from ..models import Sensor, TemperatureReading, utcnow
-from ..services.validation import MAX_REASONABLE_TEMP_C, MIN_REASONABLE_TEMP_C, is_reasonable_temp
+from ..services.timezones import aware_to_utc
+from ..services.validation import (
+    MAX_HUMIDITY_PCT,
+    MAX_REASONABLE_TEMP_C,
+    MIN_HUMIDITY_PCT,
+    MIN_REASONABLE_TEMP_C,
+    is_reasonable_temp,
+    is_valid_humidity,
+)
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
 
@@ -35,16 +43,26 @@ def create_reading():
     if not is_reasonable_temp(value_c):
         return jsonify(error=f"value_c must be between {MIN_REASONABLE_TEMP_C} and {MAX_REASONABLE_TEMP_C}."), 400
 
+    humidity_pct = None
+    if payload.get("humidity_pct") is not None:
+        try:
+            humidity_pct = float(payload["humidity_pct"])
+        except (TypeError, ValueError):
+            return jsonify(error="humidity_pct must be a number."), 400
+        if not is_valid_humidity(humidity_pct):
+            return jsonify(error=f"humidity_pct must be between {MIN_HUMIDITY_PCT} and {MAX_HUMIDITY_PCT}."), 400
+
     recorded_at = utcnow()
     if payload.get("recorded_at"):
         try:
-            recorded_at = datetime.fromisoformat(payload["recorded_at"])
+            recorded_at = aware_to_utc(datetime.fromisoformat(payload["recorded_at"]))
         except ValueError:
             return jsonify(error="recorded_at must be an ISO 8601 timestamp."), 400
 
     reading = TemperatureReading(
         location=sensor.location,
         value_c=value_c,
+        humidity_pct=humidity_pct,
         source="sensor",
         sensor_id=sensor.name,
         recorded_at=recorded_at,
@@ -53,4 +71,6 @@ def create_reading():
     db.session.add(reading)
     db.session.commit()
 
-    return jsonify(id=reading.id, location=reading.location, value_c=reading.value_c), 201
+    return jsonify(
+        id=reading.id, location=reading.location, value_c=reading.value_c, humidity_pct=reading.humidity_pct
+    ), 201

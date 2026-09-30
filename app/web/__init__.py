@@ -3,7 +3,8 @@ from datetime import timedelta
 from flask import Blueprint, render_template
 
 from ..models import HeatTransferEvent, Settings, TemperatureReading, WeatherObservation, utcnow
-from ..services.validation import MAX_REASONABLE_TEMP_C, MIN_REASONABLE_TEMP_C
+from ..services.timezones import utc_iso
+from ..services.validation import MAX_HUMIDITY_PCT, MAX_REASONABLE_TEMP_C, MIN_HUMIDITY_PCT, MIN_REASONABLE_TEMP_C
 
 web_bp = Blueprint("web", __name__)
 
@@ -33,16 +34,24 @@ def dashboard_context():
     )
     history = {
         location: [
-            {"t": row.recorded_at.isoformat(), "v": row.value_c}
+            {"t": utc_iso(row.recorded_at), "v": row.value_c}
             for row in history_rows
             if row.location == location
         ]
         for location in TemperatureReading.LOCATIONS
     }
+    # Humidity is optional per reading, so only locations that actually
+    # report it get a series (plotted on the chart's right-hand axis).
+    humidity_history = {}
+    for row in history_rows:
+        if row.humidity_pct is not None:
+            humidity_history.setdefault(row.location, []).append(
+                {"t": utc_iso(row.recorded_at), "v": row.humidity_pct}
+            )
     # Outdoor temperature comes from the weather observations the scheduler
     # stores every 30 minutes, not from TemperatureReading.
     history["outdoor"] = [
-        {"t": row.fetched_at.isoformat(), "v": row.temp_c}
+        {"t": utc_iso(row.fetched_at), "v": row.temp_c}
         for row in WeatherObservation.query.filter(WeatherObservation.fetched_at >= cutoff)
         .order_by(WeatherObservation.fetched_at.asc())
         .all()
@@ -59,7 +68,7 @@ def dashboard_context():
         active_duration_minutes = int((utcnow() - active.started_at).total_seconds() // 60)
 
     transfer_windows = [
-        {"start": t.started_at.isoformat(), "end": t.ended_at.isoformat() if t.ended_at else None}
+        {"start": utc_iso(t.started_at), "end": utc_iso(t.ended_at) if t.ended_at else None}
         for t in HeatTransferEvent.query.filter(HeatTransferEvent.started_at >= cutoff).all()
     ]
 
@@ -76,6 +85,7 @@ def dashboard_context():
     return dict(
         latest=latest,
         history=history,
+        humidity_history=humidity_history,
         history_hours=HISTORY_HOURS,
         weather=weather,
         active_transfer=active,
@@ -85,6 +95,8 @@ def dashboard_context():
         roadmap=roadmap_context(),
         min_temp_c=MIN_REASONABLE_TEMP_C,
         max_temp_c=MAX_REASONABLE_TEMP_C,
+        min_humidity_pct=MIN_HUMIDITY_PCT,
+        max_humidity_pct=MAX_HUMIDITY_PCT,
     )
 
 

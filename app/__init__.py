@@ -16,6 +16,10 @@ def create_app(config_object="config.Config"):
     migrate.init_app(app, db)
     limiter.init_app(app)
 
+    from .services.timezones import localtime_filter
+
+    app.add_template_filter(localtime_filter, "localtime")
+
     from .api import api_bp
     from .web import web_bp
     from .web.setup import setup_bp

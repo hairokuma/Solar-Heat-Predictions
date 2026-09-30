@@ -5,6 +5,7 @@ from flask import flash, redirect, render_template, request, url_for
 from . import web_bp
 from ..extensions import db
 from ..models import HeatTransferEvent, TemperatureReading, utcnow
+from ..services.timezones import local_to_utc
 
 
 def _latest_reading(location):
@@ -96,7 +97,7 @@ def edit_transfer(transfer_id):
         if not raw:
             return None
         try:
-            return datetime.fromisoformat(raw)
+            return local_to_utc(datetime.fromisoformat(raw))
         except ValueError:
             errors.append("Timestamps must be valid date/times.")
             return None

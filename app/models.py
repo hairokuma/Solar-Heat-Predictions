@@ -83,6 +83,7 @@ class TemperatureReading(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     location = db.Column(db.String(20), nullable=False)
     value_c = db.Column(db.Float, nullable=False)
+    humidity_pct = db.Column(db.Float)
     source = db.Column(db.String(10), nullable=False, default="manual")
     sensor_id = db.Column(db.String(50))
     recorded_at = db.Column(db.DateTime, nullable=False, default=utcnow)

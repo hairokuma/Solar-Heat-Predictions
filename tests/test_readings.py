@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.extensions import db
 from app.models import Sensor, Settings, TemperatureReading, WeatherObservation, utcnow
 from app.web import setup as setup_views
@@ -186,3 +188,116 @@ def test_settings_test_email_falls_back_to_stored_password(client, app, monkeypa
     assert resp.status_code == 200
     assert resp.get_json()["ok"] is True
     assert sent[0]["password"] == "hunter2"
+
+
+def test_sensor_api_stores_humidity(client, app):
+    _configure(app)
+    _register_sensor(app, location="home", api_key="test-sensor-key")
+    resp = client.post(
+        "/api/v1/readings",
+        json={"value_c": 21.0, "humidity_pct": 55.5},
+        headers={"X-API-Key": "test-sensor-key"},
+    )
+    assert resp.status_code == 201
+    assert resp.get_json()["humidity_pct"] == 55.5
+    with app.app_context():
+        assert TemperatureReading.query.one().humidity_pct == 55.5
+
+
+def test_sensor_api_humidity_is_optional(client, app):
+    _configure(app)
+    _register_sensor(app, api_key="test-sensor-key")
+    resp = client.post("/api/v1/readings", json={"value_c": 12.0}, headers={"X-API-Key": "test-sensor-key"})
+    assert resp.status_code == 201
+    with app.app_context():
+        assert TemperatureReading.query.one().humidity_pct is None
+
+
+def test_sensor_api_rejects_out_of_range_humidity(client, app):
+    _configure(app)
+    _register_sensor(app, api_key="test-sensor-key")
+    resp = client.post(
+        "/api/v1/readings",
+        json={"value_c": 12.0, "humidity_pct": 150},
+        headers={"X-API-Key": "test-sensor-key"},
+    )
+    assert resp.status_code == 400
+    with app.app_context():
+        assert TemperatureReading.query.count() == 0
+
+
+def test_manual_reading_stores_humidity_and_charts_it(client, app):
+    _configure(app)
+    resp = client.post("/readings", data={"location": "home", "value_c": "20.5", "humidity_pct": "48"})
+    assert resp.status_code == 302
+    with app.app_context():
+        assert TemperatureReading.query.one().humidity_pct == 48.0
+
+    resp = client.get("/")
+    assert b"48% RH" in resp.data
+    assert b'const humidityHistory = {"home": [{"t":' in resp.data
+
+
+def test_manual_reading_rejects_out_of_range_humidity(client, app):
+    _configure(app)
+    resp = client.post("/readings", data={"location": "home", "value_c": "20", "humidity_pct": "-5"})
+    assert resp.status_code == 400
+    assert b"Humidity must be between" in resp.data
+    with app.app_context():
+        assert TemperatureReading.query.count() == 0
+
+
+def test_manual_reading_timestamp_is_browser_local_and_stored_as_utc(client, app):
+    _configure(app)
+    client.set_cookie("tz", "Europe/Berlin")
+    resp = client.post(
+        "/readings", data={"location": "home", "value_c": "20", "recorded_at": "2026-07-01T14:00"}
+    )
+    assert resp.status_code == 302
+    with app.app_context():
+        assert TemperatureReading.query.one().recorded_at == datetime(2026, 7, 1, 12, 0)
+
+
+def test_dashboard_shows_times_in_browser_timezone(client, app):
+    _configure(app)
+    with app.app_context():
+        db.session.add(TemperatureReading(location="home", value_c=20, recorded_at=datetime(2026, 7, 1, 12, 0)))
+        db.session.commit()
+
+    assert b"2026-07-01 12:00 UTC" in client.get("/").data
+
+    client.set_cookie("tz", "Europe/Berlin")
+    resp = client.get("/")
+    assert b"2026-07-01 14:00 CEST" in resp.data
+
+
+def test_chart_timestamps_are_marked_utc(client, app):
+    _configure(app)
+    now = utcnow().replace(microsecond=0)
+    with app.app_context():
+        db.session.add(TemperatureReading(location="home", value_c=20, recorded_at=now))
+        db.session.commit()
+    # An explicit Z, so the browser's Date.parse doesn't read it as local time.
+    assert f'"t": "{now.isoformat()}Z"'.encode() in client.get("/").data
+
+
+def test_unknown_timezone_cookie_falls_back_to_utc(client, app):
+    _configure(app)
+    with app.app_context():
+        db.session.add(TemperatureReading(location="home", value_c=20, recorded_at=datetime(2026, 7, 1, 12, 0)))
+        db.session.commit()
+    client.set_cookie("tz", "Not/AZone")
+    assert b"2026-07-01 12:00 UTC" in client.get("/").data
+
+
+def test_sensor_api_converts_offset_timestamp_to_utc(client, app):
+    _configure(app)
+    _register_sensor(app, api_key="test-sensor-key")
+    resp = client.post(
+        "/api/v1/readings",
+        json={"value_c": 12.0, "recorded_at": "2026-07-01T14:00:00+02:00"},
+        headers={"X-API-Key": "test-sensor-key"},
+    )
+    assert resp.status_code == 201
+    with app.app_context():
+        assert TemperatureReading.query.one().recorded_at == datetime(2026, 7, 1, 12, 0)

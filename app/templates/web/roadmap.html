@@ -39,7 +39,7 @@
         <tbody>
           {% for slot in slots %}
             <tr class="{{ 'opportunity-row' if slot.opportunity else '' }}">
-              <td>{{ slot.forecast_for.strftime('%H:%M') }}</td>
+              <td>{{ slot.forecast_for|localtime('%H:%M') }}</td>
               <td>{{ "%.1f"|format(slot.outdoor_temp) }}°C</td>
               <td>
                 {{ slot.condition|capitalize if slot.condition else '' }}

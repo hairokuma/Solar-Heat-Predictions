@@ -2,6 +2,7 @@ from flask import render_template
 
 from . import web_bp
 from ..services.predictions import MIN_TRAINING_SAMPLES, average_effectiveness, build_roadmap
+from ..services.timezones import to_local
 
 
 @web_bp.get("/roadmap")
@@ -15,7 +16,8 @@ def roadmap_context():
 
     days = {}
     for slot in slots:
-        day_key = slot["forecast_for"].date()
+        # Group by the viewer's local day, not the UTC day.
+        day_key = to_local(slot["forecast_for"]).date()
         days.setdefault(day_key, []).append(slot)
 
     return dict(

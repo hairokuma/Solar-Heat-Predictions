@@ -6,11 +6,11 @@
 <form method="post" action="{{ url_for('web.edit_transfer', transfer_id=transfer.id) }}">
   <label>Started at
     <input type="datetime-local" name="started_at"
-           value="{{ form.started_at if form else transfer.started_at.strftime('%Y-%m-%dT%H:%M') }}" required>
+           value="{{ form.started_at if form else transfer.started_at|localtime('%Y-%m-%dT%H:%M') }}" required>
   </label>
   <label>Ended at (leave blank if still active)
     <input type="datetime-local" name="ended_at"
-           value="{{ form.ended_at if form else (transfer.ended_at.strftime('%Y-%m-%dT%H:%M') if transfer.ended_at else '') }}">
+           value="{{ form.ended_at if form else (transfer.ended_at|localtime('%Y-%m-%dT%H:%M') if transfer.ended_at else '') }}">
   </label>
   <label>Home temp at start (°C)
     <input type="number" step="0.1" name="home_temp_start"

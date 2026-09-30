@@ -28,9 +28,8 @@ indoor humidity up (mould risk) and it's a useful comfort metric. If you want co
 humidity later, use a sensor built for it, e.g. an **SHT31** or **BME280** (−40…+85 °C, 0–100 % RH,
 I²C). Either one works in the setup below in place of the NTC.
 
-> The API currently only stores `value_c`. The sketch already sends `humidity_pct` with the Home
-> reading. The server ignores it for now, so humidity is stored as soon as the backend adds a column
-> for it, and the firmware doesn't need to change.
+> The sketch sends `humidity_pct` along with the Home reading. The server stores it with the
+> reading and plots it on the dashboard chart's right-hand (% RH) axis.
 
 ## Parts
 

@@ -28,7 +28,7 @@
           <td>{{ sensor.name }}</td>
           <td>{{ sensor.location|capitalize }}</td>
           <td><code>{{ sensor.api_key }}</code></td>
-          <td>{{ sensor.last_seen_at.strftime('%Y-%m-%d %H:%M UTC') if sensor.last_seen_at else 'Never' }}</td>
+          <td>{{ sensor.last_seen_at|localtime if sensor.last_seen_at else 'Never' }}</td>
           <td>
             <form method="post" action="{{ url_for('web.delete_sensor', sensor_id=sensor.id) }}"
                   onsubmit="return confirm('Revoke this sensor? Its API key will stop working immediately.');">

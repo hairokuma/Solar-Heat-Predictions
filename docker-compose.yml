@@ -7,7 +7,4 @@ services:
     env_file:
       - .env
     volumes:
-      - solar-heat-data:/data
-
-volumes:
-  solar-heat-data:
+      - ./data:/data

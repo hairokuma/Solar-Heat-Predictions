@@ -19,8 +19,8 @@
     <tbody>
       {% for t in transfers %}
         <tr>
-          <td>{{ t.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
-          <td>{{ t.ended_at.strftime('%Y-%m-%d %H:%M') if t.ended_at else 'Active' }}</td>
+          <td>{{ t.started_at|localtime }}</td>
+          <td>{{ t.ended_at|localtime if t.ended_at else 'Active' }}</td>
           <td>
             {% if t.ended_at %}
               {{ ((t.ended_at - t.started_at).total_seconds() // 60)|int }} min

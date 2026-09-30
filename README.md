@@ -67,8 +67,11 @@ POST /api/v1/readings
 X-API-Key: <the sensor's key>
 Content-Type: application/json
 
-{"value_c": 23.4}
+{"value_c": 23.4, "humidity_pct": 55.0}
 ```
+
+`humidity_pct` is optional (0–100). It can also be entered by hand in the dashboard's
+log-reading dialog, and is plotted on the chart's right-hand axis.
 
 The ingestion endpoint is rate-limited (60 requests/minute per API key) to absorb a
 misbehaving or misconfigured device without affecting other sensors.

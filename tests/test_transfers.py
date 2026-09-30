@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.extensions import db
 from app.models import HeatTransferEvent, Settings, TemperatureReading, utcnow
 
@@ -196,3 +198,29 @@ def test_transfer_list_and_detail_pages_render(client, app):
 
     resp = client.get(f"/transfers/{transfer_id}")
     assert resp.status_code == 200
+
+
+def test_edit_transfer_round_trips_browser_local_times(client, app):
+    _configure(app)
+    with app.app_context():
+        transfer = HeatTransferEvent(started_at=utcnow(), home_temp_start=18.0, conservatory_temp_start=23.0)
+        db.session.add(transfer)
+        db.session.commit()
+        transfer_id = transfer.id
+
+    client.set_cookie("tz", "Europe/Berlin")
+    resp = client.post(
+        f"/transfers/{transfer_id}/edit",
+        data={"started_at": "2026-01-01T10:00", "ended_at": "2026-01-01T11:30"},
+    )
+    assert resp.status_code == 302
+
+    with app.app_context():
+        transfer = db.session.get(HeatTransferEvent, transfer_id)
+        assert transfer.started_at == datetime(2026, 1, 1, 9, 0)  # CET is UTC+1 in winter
+        assert transfer.ended_at == datetime(2026, 1, 1, 10, 30)
+
+    # The edit form shows the same local times back.
+    resp = client.get(f"/transfers/{transfer_id}")
+    assert b'value="2026-01-01T10:00"' in resp.data
+    assert b'value="2026-01-01T11:30"' in resp.data

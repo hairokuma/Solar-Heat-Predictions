@@ -5,7 +5,15 @@ from flask import flash, redirect, render_template, request, url_for
 from . import dashboard_context, web_bp
 from ..extensions import db
 from ..models import TemperatureReading, utcnow
-from ..services.validation import MAX_REASONABLE_TEMP_C, MIN_REASONABLE_TEMP_C, is_reasonable_temp
+from ..services.timezones import local_to_utc
+from ..services.validation import (
+    MAX_HUMIDITY_PCT,
+    MAX_REASONABLE_TEMP_C,
+    MIN_HUMIDITY_PCT,
+    MIN_REASONABLE_TEMP_C,
+    is_reasonable_temp,
+    is_valid_humidity,
+)
 
 
 @web_bp.post("/readings")
@@ -26,10 +34,21 @@ def create_reading():
         if not is_reasonable_temp(value_c):
             errors.append(f"Temperature must be between {MIN_REASONABLE_TEMP_C} and {MAX_REASONABLE_TEMP_C}°C.")
 
+    humidity_raw = (request.form.get("humidity_pct") or "").strip()
+    humidity_pct = None
+    if humidity_raw:
+        try:
+            humidity_pct = float(humidity_raw)
+        except ValueError:
+            errors.append("Humidity must be a number.")
+        else:
+            if not is_valid_humidity(humidity_pct):
+                errors.append(f"Humidity must be between {MIN_HUMIDITY_PCT} and {MAX_HUMIDITY_PCT}%.")
+
     recorded_at = utcnow()
     if recorded_at_raw:
         try:
-            recorded_at = datetime.fromisoformat(recorded_at_raw)
+            recorded_at = local_to_utc(datetime.fromisoformat(recorded_at_raw))
         except ValueError:
             errors.append("Timestamp must be a valid date/time.")
 
@@ -43,11 +62,13 @@ def create_reading():
     reading = TemperatureReading(
         location=location,
         value_c=value_c,
+        humidity_pct=humidity_pct,
         source="manual",
         recorded_at=recorded_at,
     )
     db.session.add(reading)
     db.session.commit()
 
-    flash(f"Logged {value_c}°C for {location}.", "success")
+    humidity_note = f" / {humidity_pct}% RH" if humidity_pct is not None else ""
+    flash(f"Logged {value_c}°C{humidity_note} for {location}.", "success")
     return redirect(url_for("web.dashboard"))

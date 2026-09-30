@@ -16,7 +16,10 @@
       </div>
       {% if reading %}
         <div class="tile-value">{{ "%.1f"|format(reading.value_c) }}°C</div>
-        <div class="tile-meta">{{ reading.recorded_at.strftime('%Y-%m-%d %H:%M UTC') }} ({{ reading.source }})</div>
+        {% if reading.humidity_pct is not none %}
+          <div class="tile-meta">{{ "%.0f"|format(reading.humidity_pct) }}% RH</div>
+        {% endif %}
+        <div class="tile-meta">{{ reading.recorded_at|localtime }} ({{ reading.source }})</div>
       {% else %}
         <div class="tile-value tile-empty">No data yet</div>
       {% endif %}
@@ -30,7 +33,7 @@
       <div class="tile-meta">
         {{ weather.condition|capitalize if weather.condition else '' }}
         {% if weather.cloud_pct is not none %}· {{ weather.cloud_pct|int }}% cloud{% endif %}
-        <br>{{ weather.fetched_at.strftime('%Y-%m-%d %H:%M UTC') }}
+        <br>{{ weather.fetched_at|localtime }}
       </div>
     {% else %}
       <div class="tile-value tile-empty">No data yet</div>
@@ -41,7 +44,7 @@
     <div class="tile-label">Heat Transfer</div>
     {% if active_transfer %}
       <div class="tile-value">Active · {{ active_duration_minutes }} min</div>
-      <div class="tile-meta">Started {{ active_transfer.started_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
+      <div class="tile-meta">Started {{ active_transfer.started_at|localtime }}</div>
       <form method="post" action="{{ url_for('web.stop_transfer', transfer_id=active_transfer.id) }}">
         <button type="submit">Stop Transfer</button>
       </form>
@@ -78,7 +81,7 @@
         <tbody>
           {% for slot in slots %}
             <tr class="{{ 'opportunity-row' if slot.opportunity else '' }}">
-              <td>{{ slot.forecast_for.strftime('%H:%M') }}</td>
+              <td>{{ slot.forecast_for|localtime('%H:%M') }}</td>
               <td>{{ "%.1f"|format(slot.outdoor_temp) }}°C</td>
               <td>{{ "%+.1f"|format(slot.predicted_delta) }}°C</td>
               <td>{% if slot.opportunity %}<span class="badge">Opportunity</span>{% endif %}</td>
@@ -107,6 +110,10 @@
       <input type="number" step="0.1" min="{{ min_temp_c }}" max="{{ max_temp_c }}" name="value_c" id="reading-value"
              value="{{ reading_form.value_c if reading_form else '' }}" required>
     </label>
+    <label>Humidity (% RH, optional)
+      <input type="number" step="0.1" min="{{ min_humidity_pct }}" max="{{ max_humidity_pct }}" name="humidity_pct" id="reading-humidity"
+             value="{{ reading_form.humidity_pct if reading_form else '' }}">
+    </label>
     <label>Timestamp (leave blank for now)
       <input type="datetime-local" name="recorded_at" id="reading-recorded-at"
              value="{{ reading_form.recorded_at if reading_form else '' }}">
@@ -128,6 +135,7 @@ function openReadingDialog(location, keepValues) {
     "Log a reading · " + location.charAt(0).toUpperCase() + location.slice(1);
   if (!keepValues) {
     document.getElementById("reading-value").value = "";
+    document.getElementById("reading-humidity").value = "";
     document.getElementById("reading-recorded-at").value = "";
     readingDialog.querySelector(".flashes")?.remove();
   }
@@ -146,11 +154,14 @@ openReadingDialog({{ reading_form.get('location', '') | tojson }}, true);
 {% endif %}
 
 const history = {{ history | tojson }};
+const humidityHistory = {{ humidity_history | tojson }};
 const transferWindows = {{ transfer_windows | tojson }};
 const colors = { home: "#c9622a", conservatory: "#2e7d32", garden: "#3f6fb3", outdoor: "#8a8a8a" };
 
-const datasets = Object.entries(history).map(([location, points]) => ({
-  label: location.charAt(0).toUpperCase() + location.slice(1),
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const temperatureDatasets = Object.entries(history).map(([location, points]) => ({
+  label: capitalize(location),
   data: points.map((p) => ({ x: Date.parse(p.t), y: p.v })),
   borderColor: colors[location] || "#888",
   backgroundColor: colors[location] || "#888",
@@ -158,7 +169,24 @@ const datasets = Object.entries(history).map(([location, points]) => ({
   pointRadius: location === "outdoor" ? 0 : 3,
   tension: 0.25,
   spanGaps: true,
+  yAxisID: "y",
 }));
+
+const humidityDatasets = Object.entries(humidityHistory).map(([location, points]) => ({
+  label: capitalize(location) + " RH",
+  data: points.map((p) => ({ x: Date.parse(p.t), y: p.v })),
+  borderColor: colors[location] || "#888",
+  backgroundColor: colors[location] || "#888",
+  borderDash: [2, 3],
+  borderWidth: 1.5,
+  pointRadius: 2,
+  pointStyle: "rectRot",
+  tension: 0.25,
+  spanGaps: true,
+  yAxisID: "y1",
+}));
+
+const datasets = [...temperatureDatasets, ...humidityDatasets];
 
 const transferBandsPlugin = {
   id: "transferBands",
@@ -188,7 +216,15 @@ new Chart(document.getElementById("history-chart"), {
         type: "linear",
         ticks: { callback: (value) => new Date(value).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit" }) },
       },
-      y: { title: { display: true, text: "°C" } },
+      y: { position: "left", title: { display: true, text: "°C" } },
+      y1: {
+        position: "right",
+        display: humidityDatasets.length > 0,
+        min: 0,
+        max: 100,
+        title: { display: true, text: "% RH" },
+        grid: { drawOnChartArea: false },  // keep gridlines tied to the °C axis only
+      },
     },
   },
 });

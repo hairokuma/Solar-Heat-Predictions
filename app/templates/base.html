@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Solar Heat Predictions{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>
+    // Times are stored in UTC and rendered server-side in the timezone this
+    // cookie names. On first visit (or after the browser's timezone changes)
+    // set it and reload once, so every time on the page is in browser time.
+    (function () {
+      try {
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        var match = document.cookie.match(/(?:^|; )tz=([^;]*)/);
+        if (!tz || (match && decodeURIComponent(match[1]) === tz)) return;
+        document.cookie = "tz=" + encodeURIComponent(tz) + "; path=/; max-age=31536000; SameSite=Lax";
+        // Only reload GETs (a reload would re-submit a POST), and only if the
+        // cookie actually stuck, so blocked cookies can't cause a reload loop.
+        if ({{ (request.method == "GET") | tojson }} && document.cookie.indexOf("tz=") !== -1) location.reload();
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <header class="topbar">

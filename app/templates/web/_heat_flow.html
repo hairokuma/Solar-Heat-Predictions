@@ -25,14 +25,19 @@
   </g>
 {%- endmacro %}
 
-<section class="hf-card{{ ' hf-active' if active_transfer else '' }}" aria-label="Heat flow">
+<section class="hf-card{{ ' hf-active' if active_transfer else '' }}{{ ' hf-recommend' if should_highlight_start else '' }}"
+         aria-label="Heat flow">
   <header class="hf-header">
     <span class="hf-title">Heat flow</span>
-    {% if cons and home %}
-      <span class="hf-delta">Δ {{ "%+.1f"|format(cons.value_c - home.value_c) }} °C</span>
-    {% endif %}
+    <span class="hf-header-meta">
+      {% if cons and home %}
+        <span class="hf-delta">Δ {{ "%+.1f"|format(cons.value_c - home.value_c) }} °C</span>
+      {% endif %}
+      <a href="{{ url_for('web.list_transfers') }}">Transfer log</a>
+    </span>
   </header>
 
+  <div class="hf-stage">
   <svg class="hf-svg" viewBox="0 0 720 260" role="img"
        aria-label="Conservatory {{ temp(cons) }}, fan {{ 'running' if active_transfer else 'idle' }}, home {{ temp(home) }}">
     <defs>
@@ -100,6 +105,7 @@
         Idle
       {%- endif -%}
     </text>
+    <text class="hf-caption" x="360" y="252" text-anchor="middle">tap the fan to {{ 'stop' if active_transfer else 'start' }}</text>
 
     {# Home #}
     <g class="hf-node hf-node-home" transform="translate(620 110)">
@@ -112,4 +118,17 @@
     <text class="hf-label" x="620" y="196" text-anchor="middle">HOME</text>
     <text class="hf-temp hf-temp-home" x="620" y="236" text-anchor="middle">{{ temp(home) }}</text>
   </svg>
+
+  {# The fan is the start/stop control: a real button laid over the fan
+     node (positioned in viewBox percentages, see .hf-fan-toggle). #}
+  {% if active_transfer %}
+    <form method="post" action="{{ url_for('web.stop_transfer', transfer_id=active_transfer.id) }}">
+      <button type="submit" class="hf-fan-toggle" title="Stop heat transfer" aria-label="Stop heat transfer"></button>
+    </form>
+  {% else %}
+    <form method="post" action="{{ url_for('web.start_transfer') }}">
+      <button type="submit" class="hf-fan-toggle" title="Start heat transfer" aria-label="Start heat transfer"></button>
+    </form>
+  {% endif %}
+  </div>
 </section>

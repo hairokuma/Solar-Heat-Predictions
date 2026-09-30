@@ -22,9 +22,12 @@ def _configure(app):
         db.session.commit()
 
 
-def _add_reading(location, value_c, minutes_ago):
+def _add_reading(location, value_c, minutes_ago, now=None):
+    # Pass a shared `now` where the exact gap matters: separate utcnow() calls
+    # drift by a few ms, enough to throw off an exact °C/h comparison.
+    now = now or utcnow()
     reading = TemperatureReading(
-        location=location, value_c=value_c, source="manual", recorded_at=utcnow() - timedelta(minutes=minutes_ago)
+        location=location, value_c=value_c, source="manual", recorded_at=now - timedelta(minutes=minutes_ago)
     )
     db.session.add(reading)
     db.session.commit()
@@ -32,16 +35,18 @@ def _add_reading(location, value_c, minutes_ago):
 
 
 def test_hourly_trend_scales_to_degrees_per_hour(app):
-    _add_reading("home", 18.0, minutes_ago=90)
-    latest = _add_reading("home", 19.5, minutes_ago=0)
+    now = utcnow()
+    _add_reading("home", 18.0, minutes_ago=90, now=now)
+    latest = _add_reading("home", 19.5, minutes_ago=0, now=now)
     assert hourly_trend("home", latest) == pytest.approx(1.0)
 
 
 def test_hourly_trend_uses_newest_reading_at_least_an_hour_old(app):
-    _add_reading("conservatory", 30.0, minutes_ago=110)
-    _add_reading("conservatory", 28.0, minutes_ago=60)
-    _add_reading("conservatory", 27.8, minutes_ago=30)  # too recent to be the baseline
-    latest = _add_reading("conservatory", 27.0, minutes_ago=0)
+    now = utcnow()
+    _add_reading("conservatory", 30.0, minutes_ago=110, now=now)
+    _add_reading("conservatory", 28.0, minutes_ago=60, now=now)
+    _add_reading("conservatory", 27.8, minutes_ago=30, now=now)  # too recent to be the baseline
+    latest = _add_reading("conservatory", 27.0, minutes_ago=0, now=now)
     assert hourly_trend("conservatory", latest) == pytest.approx(-1.0)
 
 

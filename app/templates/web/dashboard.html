@@ -4,6 +4,8 @@
 <div class="dashboard-main">
 <h1>Dashboard</h1>
 
+{% include "web/_heat_flow.html" %}
+
 <div class="tiles">
   {% for location in locations %}
     {% set reading = latest.get(location) %}
@@ -39,26 +41,7 @@
       <div class="tile-value tile-empty">No data yet</div>
     {% endif %}
   </div>
-
-  <div class="tile">
-    <div class="tile-label">Heat Transfer</div>
-    {% if active_transfer %}
-      <div class="tile-value">Active · {{ active_duration_minutes }} min</div>
-      <div class="tile-meta">Started {{ active_transfer.started_at|localtime }}</div>
-      <form method="post" action="{{ url_for('web.stop_transfer', transfer_id=active_transfer.id) }}">
-        <button type="submit">Stop Transfer</button>
-      </form>
-    {% else %}
-      <div class="tile-value tile-empty">Not active</div>
-      <form method="post" action="{{ url_for('web.start_transfer') }}">
-        <button type="submit" class="{{ 'cta' if should_highlight_start else '' }}">Start Transfer</button>
-      </form>
-    {% endif %}
-    <div class="tile-meta"><a href="{{ url_for('web.list_transfers') }}">View transfer log</a></div>
-  </div>
 </div>
-
-{% include "web/_heat_flow.html" %}
 
 <h2>Last {{ history_hours }}h</h2>
 <div class="chart-wrap">

@@ -182,10 +182,6 @@ button[type="button"] {
   border: 1px solid var(--accent);
 }
 
-button.cta {
-  box-shadow: 0 0 0 3px rgba(201, 98, 42, 0.25);
-}
-
 button.danger {
   background: #fff;
   color: var(--error);
@@ -399,17 +395,53 @@ code {
   color: #9aa7b2;
 }
 
+.hf-header-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  font-size: 0.85rem;
+}
+
+.hf-header-meta a { color: #9aa7b2; }
+
 .hf-delta {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--hf-cons);
 }
 
+.hf-stage {
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
 .hf-svg {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 320px;
+}
+
+/* Sits exactly over the fan node: centre (360, 110), r=50 in the 720x260 viewBox. */
+.hf-card .hf-fan-toggle {
+  position: absolute;
+  left: 50%;
+  top: 42.31%;
+  width: 13.89%;
+  aspect-ratio: 1;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.hf-card .hf-fan-toggle:hover,
+.hf-card .hf-fan-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(79, 209, 197, 0.35), 0 0 24px rgba(79, 209, 197, 0.35);
 }
 
 .hf-svg text {
@@ -500,6 +532,15 @@ code {
 }
 
 .hf-active .hf-node-fan .hf-pulse { animation-delay: 0.8s; }
+
+/* Idle but conditions are right: pulse just the fan to invite a tap. */
+.hf-recommend:not(.hf-active) .hf-node-fan .hf-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hf-pulse 1.6s ease-out infinite;
+}
+
+.hf-recommend:not(.hf-active) .hf-node-fan .hf-ring { stroke: var(--hf-fan); }
 .hf-active .hf-node-home .hf-pulse { animation-delay: 1.6s; }
 
 /* Pipes */

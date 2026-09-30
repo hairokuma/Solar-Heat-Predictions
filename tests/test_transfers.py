@@ -171,8 +171,8 @@ def test_dashboard_shows_active_transfer_and_stop_button(client, app):
 
     resp = client.get("/")
     assert resp.status_code == 200
-    assert b"Stop Transfer" in resp.data
-    assert b"Active" in resp.data
+    assert b'aria-label="Stop heat transfer"' in resp.data
+    assert b"Running" in resp.data
 
 
 def test_dashboard_highlights_start_when_condition_met(client, app):
@@ -182,7 +182,7 @@ def test_dashboard_highlights_start_when_condition_met(client, app):
 
     resp = client.get("/")
     assert resp.status_code == 200
-    assert b'class="cta"' in resp.data
+    assert b"hf-recommend" in resp.data
 
 
 def test_transfer_list_and_detail_pages_render(client, app):

@@ -195,9 +195,11 @@ const unsigned long READ_INTERVAL_MS = 5UL * 60UL * 1000UL;  // 5 minutes
 const uint8_t DHT_PIN  = D2;   // GPIO4
 const uint8_t DHT_TYPE = DHT11;
 
-// NTC thermistor (check your datasheet)
-const float NTC_R25   = 10000.0;  // resistance at 25 °C, ohms
-const float NTC_BETA  = 3950.0;   // B-value (3950 or 3435 are common)
+// NTC thermistor. Datasheet defaults would be R25 = 10000, B = 3950 (or 3435).
+// These values are calibrated against the DHT11 + a mercury thermometer
+// (see "Calibrating the NTC" below). R25 also absorbs SUPPLY_V / ADC scale errors.
+const float NTC_R25   = 9390.0;   // effective resistance at 25 °C, ohms
+const float NTC_BETA  = 3435.0;   // B-value
 const float R_FIXED   = 10000.0;  // fixed divider resistor between A0 and GND, ohms
 
 // Board ADC characteristics (NodeMCU / Wemos D1 mini)
@@ -351,3 +353,33 @@ void loop() {
   conservatory. They should agree within about 1–2 °C, since the DHT11 is only ±2 °C accurate. If
   the NTC is consistently off against a good reference thermometer, first set `SUPPLY_V` to the
   voltage you measure on the `3V3` pin. Use `CONSERVATORY_OFFSET_C` for whatever difference is left.
+
+## Calibrating the NTC
+
+A plain °C offset only works if the error is the same at every temperature. If the error changes
+with temperature, the B-value is wrong, and you need to fix `NTC_BETA` and `NTC_R25` instead.
+
+**What we measured (Oct 2026).** Both sensors and a mercury thermometer sat side by side, out of
+direct sun, for about 24 h. The DHT11 agreed with the mercury thermometer. With the datasheet
+values (`R25 = 10000`, `B = 3950`), the NTC read too high:
+
+| DHT11 (reference) | 13 °C | 15 °C | 17 °C | 20 °C | 22 °C | 23–24 °C |
+| --- | --- | --- | --- | --- | --- | --- |
+| NTC − DHT11 | +2.3 | +2.3 | +2.6 | +2.4 | +1.8 | +1.0…1.5 |
+
+The error shrinks as it gets warmer. A least-squares fit of the beta equation to the stable
+periods gave B ≈ 3540, close to the common **3435** part. So the thermistor is most likely a
+B = 3435 type, not 3950. With `NTC_BETA = 3435` and a fitted `NTC_R25 = 9390`, the remaining
+difference is about ±0.5 °C, which is within the DHT11's own scatter. Those are the values in the
+sketch above.
+
+**Redoing the fit.** The sketch's serial output prints the computed resistance (`ohm`) for every
+reading. Log it next to a reference temperature at two or more points that are far apart. For
+each pair, `ln(R) = ln(R25) + B · (1/T − 1/298.15)`, with T in kelvin. This is a straight line in
+`1/T`: its slope is `B` and its intercept gives `R25`.
+
+**Check the cold end.** The fit above only covers 13–25 °C. The conservatory goes well outside that
+range, so verify at least once with a known point: a glass of crushed ice and a little water is
+exactly **0 °C**. Put the NTC tip in it, wrapped in cling film, and wait 5 minutes. With the
+calibrated values it should read 0 ± 0.5 °C. If it is still off by more than about 1 °C, add the
+ice-bath point and refit `NTC_BETA`.
